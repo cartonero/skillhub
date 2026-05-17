@@ -3,6 +3,7 @@ import Login from './pages/Login'
 import Registro from './pages/Registro'
 import DashBuscador from './pages/DashBuscador'
 import DashProfesional from './pages/DashProfesional'
+import PerfilProfesional from './pages/PerfilProfesional'
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         <Route path="/registro" element={<Registro />} />
         <Route path="/dash-buscador" element={<DashBuscador />} />
         <Route path="/dash-profesional" element={<DashProfesional />} />
+        <Route path="/profesional/:id" element={<PerfilProfesional />} />
       </Routes>
     </BrowserRouter>
   )
