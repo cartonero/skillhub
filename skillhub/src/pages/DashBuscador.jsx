@@ -43,11 +43,14 @@ function DashBuscador() {
   }
 
   return (
-    <div>
-      <h2>Buscar profesionales</h2>
+    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '30px 20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <h2>🔍 Buscar profesionales</h2>
+        <button onClick={cerrarSesion} style={{ backgroundColor: '#ccc', color: '#333' }}>Cerrar sesión</button>
+      </div>
 
-      <div>
-        <select value={rubro} onChange={(e) => setRubro(e.target.value)}>
+      <div style={{ background: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', marginBottom: '24px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <select value={rubro} onChange={(e) => setRubro(e.target.value)} style={{ flex: 1 }}>
           <option value="">Todos los rubros</option>
           <option value="plomero">Plomero</option>
           <option value="electricista">Electricista</option>
@@ -56,40 +59,47 @@ function DashBuscador() {
           <option value="mecanico">Mecánico</option>
         </select>
         <input placeholder="Localidad" value={localidad}
-          onChange={(e) => setLocalidad(e.target.value)} />
+          onChange={(e) => setLocalidad(e.target.value)} style={{ flex: 1 }} />
         <button onClick={buscar}>Buscar</button>
       </div>
 
       <div>
-        {profesionales.length === 0 && <p>No se encontraron profesionales.</p>}
+        {profesionales.length === 0 && (
+          <p style={{ textAlign: 'center', color: '#666' }}>No se encontraron profesionales.</p>
+        )}
         {profesionales.map((p) => {
           const promedio = calcularPromedio(p.resenias)
           return (
-            <div key={p.id} style={{ border: '1px solid #ccc', margin: '10px', padding: '10px' }}>
-              <h3>{p.perfiles?.nombre || 'Sin nombre'}</h3>
-              <p><strong>Rubro:</strong> {p.rubro}</p>
-              <p><strong>Localidad:</strong> {p.perfiles?.localidad || 'No especificada'}</p>
-              <p><strong>Provincia:</strong> {p.perfiles?.provincia || 'No especificada'}</p>
-              <p><strong>Descripción:</strong> {p.descripcion || 'Sin descripción'}</p>
-              <p><strong>Disponible:</strong> {p.disponible ? '✅ Sí' : '❌ No'}</p>
-              {promedio
-                ? <p><strong>⭐ Promedio:</strong> {promedio} / 5 ({p.resenias.length} reseñas)</p>
-                : <p><strong>⭐ Sin reseñas aún</strong></p>
-              }
-              {p.perfiles?.telefono && (
-                <a href={`https://wa.me/${p.perfiles.telefono}`} target="_blank">
-                  📱 Contactar por WhatsApp
-                </a>
-              )}
-              <br />
-              <Link to={`/profesional/${p.id}`}>Ver perfil completo →</Link>
+            <div key={p.id} style={{ background: 'white', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '20px', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <h3 style={{ marginBottom: '8px' }}>{p.perfiles?.nombre || 'Sin nombre'}</h3>
+                  <p><strong>Rubro:</strong> {p.rubro}</p>
+                  <p><strong>Localidad:</strong> {p.perfiles?.localidad || 'No especificada'} — {p.perfiles?.provincia || ''}</p>
+                  <p><strong>Descripción:</strong> {p.descripcion || 'Sin descripción'}</p>
+                  <p><strong>Disponible:</strong> {p.disponible ? '✅ Sí' : '❌ No'}</p>
+                  {promedio
+                    ? <p>⭐ <strong>{promedio}</strong> / 5 ({p.resenias.length} reseñas)</p>
+                    : <p>⭐ Sin reseñas aún</p>
+                  }
+                </div>
+              </div>
+              <div style={{ marginTop: '12px', display: 'flex', gap: '10px' }}>
+                {p.perfiles?.telefono && (
+                  <a href={`https://wa.me/${p.perfiles.telefono}`} target="_blank"
+                    style={{ background: '#25d366', color: 'white', padding: '8px 14px', borderRadius: '6px' }}>
+                    📱 WhatsApp
+                  </a>
+                )}
+                <Link to={`/profesional/${p.id}`}
+                  style={{ background: '#f4a261', color: 'white', padding: '8px 14px', borderRadius: '6px' }}>
+                  Ver perfil →
+                </Link>
+              </div>
             </div>
           )
         })}
       </div>
-
-      <br />
-      <button onClick={cerrarSesion}>Cerrar sesión</button>
     </div>
   )
 }
