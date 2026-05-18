@@ -53,3 +53,61 @@ hr {
   border: none;
   border-top: 1px solid #ddd;
 }
+
+
+/* ===== RESPONSIVE ===== */
+
+/* Tablet (menos de 768px) */
+@media (max-width: 768px) {
+  input, select, textarea {
+    max-width: 100%;
+  }
+
+  /* Header del perfil profesional */
+  div[style*="display: flex"][style*="gap: 24px"] {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* Grilla de datos personales */
+  div[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Buscador — filtros apilados */
+  div[style*="display: flex"][style*="gap: 10px"] {
+    flex-direction: column;
+  }
+}
+
+/* Celular (menos de 480px) */
+@media (max-width: 480px) {
+  h2 {
+    font-size: 20px;
+  }
+
+  h3 {
+    font-size: 16px;
+  }
+
+  /* Cards del buscador */
+  div[style*="border-radius: 12px"] {
+    padding: 14px !important;
+  }
+
+  /* Portfolio en una columna */
+  div[style*="grid-template-columns: repeat(auto-fill"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Botones de perfil apilados */
+  div[style*="flex-direction: column"][style*="gap: 10px"] {
+    width: 100%;
+  }
+
+  button, a[style*="padding: 10px"] {
+    width: 100%;
+    text-align: center;
+  }
+}
