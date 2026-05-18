@@ -11,25 +11,33 @@ function DashBuscador() {
     buscar()
   }, [])
 
-  async function buscar() {
-    let query = supabase
-      .from('profesionales')
-      .select(`
-        id,
-        rubro,
-        descripcion,
-        disponible,
-        perfiles (nombre, telefono, localidad, provincia),
-        resenias (estrellas)
-      `)
+async function buscar() {
+  let query = supabase
+    .from('profesionales')
+    .select(`
+      id,
+      rubro,
+      descripcion,
+      disponible,
+      perfiles (nombre, telefono, localidad, provincia),
+      resenias (estrellas)
+    `)
 
-    if (rubro) query = query.eq('rubro', rubro)
-    if (localidad) query = query.ilike('perfiles.localidad', `%${localidad}%`)
+  if (rubro) query = query.eq('rubro', rubro)
 
-    const { data, error } = await query
-    if (error) console.error(error)
-    if (data) setProfesionales(data)
+  const { data, error } = await query
+  if (error) console.error(error)
+  
+  if (data) {
+    let resultado = data
+    if (localidad) {
+      resultado = data.filter(p =>
+        p.perfiles?.localidad?.toLowerCase().includes(localidad.toLowerCase())
+      )
+    }
+    setProfesionales(resultado)
   }
+}
 
   function calcularPromedio(resenias) {
     if (!resenias || resenias.length === 0) return null
