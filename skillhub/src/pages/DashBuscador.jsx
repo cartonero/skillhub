@@ -1,43 +1,44 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../services/supabase'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 function DashBuscador() {
   const [profesionales, setProfesionales] = useState([])
   const [rubro, setRubro] = useState('')
   const [localidad, setLocalidad] = useState('')
+  const navigate = useNavigate()
 
   useEffect(() => {
     buscar()
   }, [])
 
-async function buscar() {
-  let query = supabase
-    .from('profesionales')
-    .select(`
-      id,
-      rubro,
-      descripcion,
-      disponible,
-      perfiles (nombre, telefono, localidad, provincia),
-      resenias (estrellas)
-    `)
+  async function buscar() {
+    let query = supabase
+      .from('profesionales')
+      .select(`
+        id,
+        rubro,
+        descripcion,
+        disponible,
+        perfiles (nombre, telefono, localidad, provincia),
+        resenias (estrellas)
+      `)
 
-  if (rubro) query = query.eq('rubro', rubro)
+    if (rubro) query = query.eq('rubro', rubro)
 
-  const { data, error } = await query
-  if (error) console.error(error)
-  
-  if (data) {
-    let resultado = data
-    if (localidad) {
-      resultado = data.filter(p =>
-        p.perfiles?.localidad?.toLowerCase().includes(localidad.toLowerCase())
-      )
+    const { data, error } = await query
+    if (error) console.error(error)
+
+    if (data) {
+      let resultado = data
+      if (localidad) {
+        resultado = data.filter(p =>
+          p.perfiles?.localidad?.toLowerCase().includes(localidad.toLowerCase())
+        )
+      }
+      setProfesionales(resultado)
     }
-    setProfesionales(resultado)
   }
-}
 
   function calcularPromedio(resenias) {
     if (!resenias || resenias.length === 0) return null
@@ -47,7 +48,7 @@ async function buscar() {
 
   async function cerrarSesion() {
     await supabase.auth.signOut()
-    window.location.href = '/login'
+    navigate('/login')
   }
 
   return (

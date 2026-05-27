@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../services/supabase'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 
 function PerfilProfesional() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const [perfil, setPerfil] = useState(null)
   const [prof, setProf] = useState(null)
   const [trabajos, setTrabajos] = useState([])
@@ -49,7 +50,6 @@ function PerfilProfesional() {
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '30px 20px' }}>
 
-      {/* HEADER */}
       <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '30px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '24px' }}>
         <img
           src={perfil.foto_perfil || 'https://via.placeholder.com/100x100?text=Foto'}
@@ -70,14 +70,13 @@ function PerfilProfesional() {
               📱 WhatsApp
             </a>
           )}
-          <a href="/dash-buscador"
-            style={{ background: '#eee', color: '#333', padding: '10px 16px', borderRadius: '8px', textAlign: 'center' }}>
+          <button onClick={() => navigate('/dash-buscador')}
+            style={{ background: '#eee', color: '#333', padding: '10px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer' }}>
             ← Volver
-          </a>
+          </button>
         </div>
       </div>
 
-      {/* PORTFOLIO */}
       <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px', marginBottom: '24px' }}>
         <h3 style={{ marginBottom: '16px' }}>Portfolio de trabajos</h3>
         {trabajos.length === 0 && <p style={{ color: '#666' }}>No hay trabajos cargados aún.</p>}
@@ -92,7 +91,6 @@ function PerfilProfesional() {
         </div>
       </div>
 
-      {/* RESEÑAS */}
       <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px', marginBottom: '24px' }}>
         <h3 style={{ marginBottom: '16px' }}>Reseñas ({resenias.length})</h3>
         {resenias.length === 0 && <p style={{ color: '#666' }}>Todavía no hay reseñas.</p>}
@@ -104,7 +102,6 @@ function PerfilProfesional() {
         ))}
       </div>
 
-      {/* DEJAR RESEÑA */}
       <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px' }}>
         <h3 style={{ marginBottom: '16px' }}>Dejar una reseña</h3>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>

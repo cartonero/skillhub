@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../services/supabase'
+import { useNavigate } from 'react-router-dom'
 
 function DashProfesional() {
   const [perfil, setPerfil] = useState({ nombre: '', telefono: '', localidad: '', provincia: '', foto_perfil: '' })
@@ -10,6 +11,7 @@ function DashProfesional() {
   const [descFoto, setDescFoto] = useState('')
   const archivoRef = useRef(null)
   const avatarRef = useRef(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     async function cargarDatos() {
@@ -64,13 +66,12 @@ function DashProfesional() {
 
   async function cerrarSesion() {
     await supabase.auth.signOut()
-    window.location.href = '/login'
+    navigate('/login')
   }
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '30px 20px' }}>
 
-      {/* HEADER CON FOTO DE PERFIL */}
       <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '30px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '24px' }}>
         <div style={{ position: 'relative' }}>
           <img
@@ -90,7 +91,6 @@ function DashProfesional() {
         <button onClick={cerrarSesion} style={{ backgroundColor: '#ccc', color: '#333', alignSelf: 'flex-start' }}>Cerrar sesión</button>
       </div>
 
-      {/* DATOS PERSONALES */}
       <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px', marginBottom: '24px' }}>
         <h3 style={{ marginBottom: '16px' }}>Datos personales</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -126,7 +126,6 @@ function DashProfesional() {
         {mensaje && <p style={{ marginTop: '10px' }}>{mensaje}</p>}
       </div>
 
-      {/* PORTFOLIO */}
       <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px' }}>
         <h3 style={{ marginBottom: '16px' }}>Portfolio de trabajos</h3>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
