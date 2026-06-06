@@ -64,11 +64,6 @@ function DashProfesional() {
     cargarTrabajos(userId)
   }
 
-  async function cerrarSesion() {
-    await supabase.auth.signOut()
-    navigate('/login')
-  }
-
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '30px 20px' }}>
 
@@ -88,7 +83,6 @@ function DashProfesional() {
             <button onClick={subirAvatar} style={{ padding: '6px 12px', fontSize: '12px' }}>Cambiar foto</button>
           </div>
         </div>
-        <button onClick={cerrarSesion} style={{ backgroundColor: '#ccc', color: '#333', alignSelf: 'flex-start' }}>Cerrar sesión</button>
       </div>
 
       <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px', marginBottom: '24px' }}>

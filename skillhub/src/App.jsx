@@ -4,10 +4,12 @@ import Registro from './pages/Registro'
 import DashBuscador from './pages/DashBuscador'
 import DashProfesional from './pages/DashProfesional'
 import PerfilProfesional from './pages/PerfilProfesional'
+import Navbar from './components/Navbar'
 
 function App() {
   return (
     <BrowserRouter>
+      <Navbar />
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
