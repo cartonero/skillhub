@@ -2,13 +2,10 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../services/supabase'
 import { useEffect, useState } from 'react'
 
-function Navbar() {
+function NavbarContenido() {
   const navigate = useNavigate()
   const location = useLocation()
   const [nombreUsuario, setNombreUsuario] = useState('')
-
-  const rutasSinNavbar = ['/', '/login', '/registro']
-  if (rutasSinNavbar.includes(location.pathname)) return null
 
   useEffect(() => {
     const obtenerNombre = async () => {
@@ -81,6 +78,13 @@ function Navbar() {
       </div>
     </nav>
   )
+}
+
+function Navbar() {
+  const location = useLocation()
+  const rutasSinNavbar = ['/', '/login', '/registro']
+  if (rutasSinNavbar.includes(location.pathname)) return null
+  return <NavbarContenido />
 }
 
 export default Navbar
