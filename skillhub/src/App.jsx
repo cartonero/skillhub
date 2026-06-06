@@ -5,6 +5,7 @@ import DashBuscador from './pages/DashBuscador'
 import DashProfesional from './pages/DashProfesional'
 import PerfilProfesional from './pages/PerfilProfesional'
 import Navbar from './components/Navbar'
+import NotFound from './pages/NotFound'
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/dash-buscador" element={<DashBuscador />} />
         <Route path="/dash-profesional" element={<DashProfesional />} />
         <Route path="/profesional/:id" element={<PerfilProfesional />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   )
