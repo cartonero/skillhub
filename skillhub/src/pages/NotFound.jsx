@@ -46,7 +46,7 @@ function NotFound() {
         }}
       >
         ← Volver
-      </button>
+        </button>
     </div>
   )
 }
