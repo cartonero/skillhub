@@ -70,6 +70,14 @@ function PerfilProfesional() {
               📱 WhatsApp
             </a>
           )}
+          {userId && userId !== id && (
+            <button
+              onClick={() => navigate(`/chat/${id}`)}
+              style={{ background: '#1a1a2e', color: 'white', padding: '10px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
+            >
+              💬 Enviar mensaje
+            </button>
+          )}
           <button onClick={() => navigate('/dash-buscador')}
             style={{ background: '#eee', color: '#333', padding: '10px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer' }}>
             ← Volver
