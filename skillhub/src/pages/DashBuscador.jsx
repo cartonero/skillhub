@@ -9,6 +9,7 @@ function DashBuscador() {
   const [userId, setUserId] = useState(null)
   const [favoritos, setFavoritos] = useState([])
   const [vistaFavoritos, setVistaFavoritos] = useState(false)
+  const [nombreUsuario, setNombreUsuario] = useState('')
 
   useEffect(() => {
     async function init() {
@@ -16,6 +17,8 @@ function DashBuscador() {
       if (user) {
         setUserId(user.id)
         cargarFavoritos(user.id)
+        const { data: perfilData } = await supabase.from('perfiles').select('nombre').eq('id', user.id).single()
+        if (perfilData?.nombre) setNombreUsuario(perfilData.nombre.split(' ')[0])
       }
       buscar()
     }
@@ -90,8 +93,30 @@ function DashBuscador() {
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', padding: '30px 20px' }}>
 
+      {nombreUsuario && (
+        <div style={{
+          background: 'linear-gradient(135deg, #1a1a2e, #0f3460)',
+          borderRadius: '16px',
+          padding: '24px 28px',
+          marginBottom: '24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+          <div>
+            <h2 style={{ color: 'white', margin: '0 0 4px', fontSize: '22px' }}>
+              ¡Bienvenido, {nombreUsuario}! 👋
+            </h2>
+            <p style={{ color: '#aab', margin: 0, fontSize: '14px' }}>
+              Encontrá el profesional que necesitás
+            </p>
+          </div>
+          <div style={{ fontSize: '48px' }}>🔧</div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h2>{vistaFavoritos ? '❤️ Mis favoritos' : '🔍 Buscar profesionales'}</h2>
+        <h2 style={{ margin: 0 }}>{vistaFavoritos ? '❤️ Mis favoritos' : '🔍 Buscar profesionales'}</h2>
         <button
           onClick={() => setVistaFavoritos(!vistaFavoritos)}
           style={{
@@ -151,26 +176,20 @@ function DashBuscador() {
               onMouseLeave={e => e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)'}
             >
               <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-
                 <img
                   src={p.perfiles?.foto_perfil || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.perfiles?.nombre || 'P')}&background=f4a261&color=fff&size=80`}
                   alt={p.perfiles?.nombre}
                   style={{ width: '72px', height: '72px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #f4a261', flexShrink: 0 }}
                 />
-
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
                       <h3 style={{ marginBottom: '6px' }}>{p.perfiles?.nombre || 'Sin nombre'}</h3>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
                         <span style={{
-                          background: colorRubro.bg,
-                          color: colorRubro.color,
-                          padding: '2px 10px',
-                          borderRadius: '999px',
-                          fontSize: '12px',
-                          fontWeight: '500',
-                          textTransform: 'capitalize',
+                          background: colorRubro.bg, color: colorRubro.color,
+                          padding: '2px 10px', borderRadius: '999px', fontSize: '12px',
+                          fontWeight: '500', textTransform: 'capitalize',
                         }}>{p.rubro}</span>
                         <span style={{ color: '#888', fontSize: '13px' }}>📍 {p.perfiles?.localidad || 'No especificada'}, {p.perfiles?.provincia || ''}</span>
                       </div>
@@ -183,17 +202,14 @@ function DashBuscador() {
                         }
                       </div>
                     </div>
-                    <button
-                      onClick={() => toggleFavorito(p.id)}
+                    <button onClick={() => toggleFavorito(p.id)}
                       style={{ background: 'transparent', border: 'none', fontSize: '22px', cursor: 'pointer', padding: '4px', flexShrink: 0 }}
-                      title={esFavorito ? 'Quitar de favoritos' : 'Agregar a favoritos'}
-                    >
+                      title={esFavorito ? 'Quitar de favoritos' : 'Agregar a favoritos'}>
                       {esFavorito ? '❤️' : '🤍'}
                     </button>
                   </div>
                 </div>
               </div>
-
               <div style={{ marginTop: '14px', display: 'flex', gap: '10px' }}>
                 {p.perfiles?.telefono && (
                   <a href={`https://wa.me/${p.perfiles.telefono}`} target="_blank"
