@@ -14,6 +14,7 @@ function DashProfesional() {
   const [mensajesChat, setMensajesChat] = useState([])
   const [nuevoMensaje, setNuevoMensaje] = useState('')
   const [notificaciones, setNotificaciones] = useState([])
+  const [confirmarBorrar, setConfirmarBorrar] = useState(false)
   const archivoRef = useRef(null)
   const avatarRef = useRef(null)
   const bottomRef = useRef(null)
@@ -45,11 +46,13 @@ function DashProfesional() {
       .eq('usuario_id', uid)
       .order('created_at', { ascending: false })
     if (data) setNotificaciones(data)
+    const tieneSinLeer = data?.some(n => !n.leida)
     await supabase
       .from('notificaciones')
       .update({ leida: true })
       .eq('usuario_id', uid)
       .eq('leida', false)
+    if (tieneSinLeer) window.location.reload()
   }
 
   async function cargarTrabajos(uid) {
@@ -94,6 +97,18 @@ function DashProfesional() {
     })
     setNuevoMensaje('')
     await abrirChat(chatAbierto.id, chatAbierto.nombre)
+  }
+
+  async function borrarCuenta() {
+    await supabase.from('resenias').delete().eq('profesional_id', userId)
+    await supabase.from('trabajos').delete().eq('profesional_id', userId)
+    await supabase.from('mensajes').delete().or(`de_id.eq.${userId},para_id.eq.${userId}`)
+    await supabase.from('notificaciones').delete().eq('usuario_id', userId)
+    await supabase.from('favoritos').delete().eq('profesional_id', userId)
+    await supabase.from('profesionales').delete().eq('id', userId)
+    await supabase.from('perfiles').delete().eq('id', userId)
+    await supabase.auth.signOut()
+    navigate('/login')
   }
 
   function formatHora(timestamp) {
@@ -164,13 +179,10 @@ function DashProfesional() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {notificaciones.map((n) => (
               <div key={n.id} style={{
-                padding: '12px 16px',
-                borderRadius: '10px',
+                padding: '12px 16px', borderRadius: '10px',
                 background: n.leida ? '#f8f8f8' : '#fff3e8',
                 border: n.leida ? '1px solid #eee' : '1px solid #f4a261',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               }}>
                 <span style={{ fontSize: '14px', color: '#333' }}>{n.mensaje}</span>
                 <span style={{ fontSize: '11px', color: '#999', marginLeft: '12px', whiteSpace: 'nowrap' }}>{formatFecha(n.created_at)}</span>
@@ -192,7 +204,6 @@ function DashProfesional() {
           <input placeholder="Provincia" value={perfil.provincia || ''}
             onChange={(e) => setPerfil({ ...perfil, provincia: e.target.value })} />
         </div>
-
         <h3 style={{ margin: '16px 0' }}>Datos profesionales</h3>
         <select value={prof.rubro} onChange={(e) => setProf({ ...prof, rubro: e.target.value })}>
           <option value="plomero">Plomero</option>
@@ -234,7 +245,6 @@ function DashProfesional() {
             </div>
           ))}
         </div>
-
         {chatAbierto && (
           <div style={{ marginTop: '16px', border: '1px solid #eee', borderRadius: '12px', overflow: 'hidden' }}>
             <div style={{ background: '#1a1a2e', padding: '12px 16px' }}>
@@ -274,7 +284,7 @@ function DashProfesional() {
         )}
       </div>
 
-      <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px' }}>
+      <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px', marginBottom: '24px' }}>
         <h3 style={{ marginBottom: '16px' }}>Portfolio de trabajos</h3>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
           <input type="file" accept="image/*" ref={archivoRef} style={{ maxWidth: '200px' }} />
@@ -291,6 +301,39 @@ function DashProfesional() {
             </div>
           ))}
         </div>
+      </div>
+
+      <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px', border: '1px solid #fde8e8' }}>
+        <h3 style={{ marginBottom: '8px', color: '#c0392b' }}>⚠️ Zona de peligro</h3>
+        <p style={{ color: '#666', fontSize: '14px', marginBottom: '16px' }}>
+          Al borrar tu cuenta se eliminarán todos tus datos: perfil, trabajos, reseñas y mensajes. Esta acción no se puede deshacer.
+        </p>
+        {!confirmarBorrar ? (
+          <button
+            onClick={() => setConfirmarBorrar(true)}
+            style={{ background: 'transparent', border: '1px solid #e74c3c', color: '#e74c3c', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}
+          >
+            🗑️ Borrar mi cuenta
+          </button>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <p style={{ color: '#e74c3c', fontWeight: '500' }}>¿Estás seguro? Esta acción es irreversible.</p>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={borrarCuenta}
+                style={{ background: '#e74c3c', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}
+              >
+                Sí, borrar todo
+              </button>
+              <button
+                onClick={() => setConfirmarBorrar(false)}
+                style={{ background: '#eee', color: '#333', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
     </div>
