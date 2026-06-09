@@ -52,7 +52,7 @@ function DashBuscador() {
         rubro,
         descripcion,
         disponible,
-        perfiles (nombre, telefono, localidad, provincia),
+        perfiles (nombre, telefono, localidad, provincia, foto_perfil),
         resenias (estrellas)
       `)
     if (rubro) query = query.eq('rubro', rubro)
@@ -73,6 +73,14 @@ function DashBuscador() {
     if (!resenias || resenias.length === 0) return null
     const suma = resenias.reduce((acc, r) => acc + r.estrellas, 0)
     return (suma / resenias.length).toFixed(1)
+  }
+
+  const rubroColores = {
+    plomero: { bg: '#e8f4fd', color: '#1a6fa8' },
+    electricista: { bg: '#fef9e7', color: '#b7950b' },
+    gasista: { bg: '#fdebd0', color: '#ca6f1e' },
+    constructor: { bg: '#eafaf1', color: '#1e8449' },
+    mecanico: { bg: '#f4ecf7', color: '#7d3c98' },
   }
 
   const listaMostrada = vistaFavoritos
@@ -125,43 +133,76 @@ function DashBuscador() {
         {listaMostrada.map((p) => {
           const promedio = calcularPromedio(p.resenias)
           const esFavorito = favoritos.includes(p.id)
+          const colorRubro = rubroColores[p.rubro] || { bg: '#f0f0f0', color: '#555' }
+          const descripcionCorta = p.descripcion && p.descripcion.length > 100
+            ? p.descripcion.substring(0, 100) + '...'
+            : p.descripcion || 'Sin descripción'
+
           return (
-            <div key={p.id} style={{ background: 'white', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '20px', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <h3 style={{ marginBottom: '8px' }}>{p.perfiles?.nombre || 'Sin nombre'}</h3>
-                  <p><strong>Rubro:</strong> {p.rubro}</p>
-                  <p><strong>Localidad:</strong> {p.perfiles?.localidad || 'No especificada'} — {p.perfiles?.provincia || ''}</p>
-                  <p><strong>Descripción:</strong> {p.descripcion || 'Sin descripción'}</p>
-                  <p><strong>Disponible:</strong> {p.disponible ? '✅ Sí' : '❌ No'}</p>
-                  {promedio
-                    ? <p>⭐ <strong>{promedio}</strong> / 5 ({p.resenias.length} reseñas)</p>
-                    : <p>⭐ Sin reseñas aún</p>
-                  }
+            <div key={p.id} style={{
+              background: 'white',
+              borderRadius: '12px',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+              padding: '20px',
+              marginBottom: '16px',
+              transition: 'box-shadow 0.2s',
+            }}
+              onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.14)'}
+              onMouseLeave={e => e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)'}
+            >
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+
+                <img
+                  src={p.perfiles?.foto_perfil || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.perfiles?.nombre || 'P')}&background=f4a261&color=fff&size=80`}
+                  alt={p.perfiles?.nombre}
+                  style={{ width: '72px', height: '72px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #f4a261', flexShrink: 0 }}
+                />
+
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <h3 style={{ marginBottom: '6px' }}>{p.perfiles?.nombre || 'Sin nombre'}</h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                        <span style={{
+                          background: colorRubro.bg,
+                          color: colorRubro.color,
+                          padding: '2px 10px',
+                          borderRadius: '999px',
+                          fontSize: '12px',
+                          fontWeight: '500',
+                          textTransform: 'capitalize',
+                        }}>{p.rubro}</span>
+                        <span style={{ color: '#888', fontSize: '13px' }}>📍 {p.perfiles?.localidad || 'No especificada'}, {p.perfiles?.provincia || ''}</span>
+                      </div>
+                      <p style={{ color: '#555', fontSize: '14px', marginBottom: '6px' }}>{descripcionCorta}</p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '13px' }}>{p.disponible ? '✅ Disponible' : '❌ No disponible'}</span>
+                        {promedio
+                          ? <span style={{ fontSize: '13px' }}>⭐ <strong>{promedio}</strong> / 5 ({p.resenias.length} reseñas)</span>
+                          : <span style={{ fontSize: '13px', color: '#999' }}>⭐ Sin reseñas aún</span>
+                        }
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => toggleFavorito(p.id)}
+                      style={{ background: 'transparent', border: 'none', fontSize: '22px', cursor: 'pointer', padding: '4px', flexShrink: 0 }}
+                      title={esFavorito ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+                    >
+                      {esFavorito ? '❤️' : '🤍'}
+                    </button>
+                  </div>
                 </div>
-                <button
-                  onClick={() => toggleFavorito(p.id)}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    fontSize: '24px',
-                    cursor: 'pointer',
-                    padding: '4px',
-                  }}
-                  title={esFavorito ? 'Quitar de favoritos' : 'Agregar a favoritos'}
-                >
-                  {esFavorito ? '❤️' : '🤍'}
-                </button>
               </div>
-              <div style={{ marginTop: '12px', display: 'flex', gap: '10px' }}>
+
+              <div style={{ marginTop: '14px', display: 'flex', gap: '10px' }}>
                 {p.perfiles?.telefono && (
                   <a href={`https://wa.me/${p.perfiles.telefono}`} target="_blank"
-                    style={{ background: '#25d366', color: 'white', padding: '8px 14px', borderRadius: '6px' }}>
+                    style={{ background: '#25d366', color: 'white', padding: '8px 14px', borderRadius: '6px', fontSize: '14px' }}>
                     📱 WhatsApp
                   </a>
                 )}
                 <Link to={`/profesional/${p.id}`}
-                  style={{ background: '#f4a261', color: 'white', padding: '8px 14px', borderRadius: '6px' }}>
+                  style={{ background: '#f4a261', color: 'white', padding: '8px 14px', borderRadius: '6px', fontSize: '14px' }}>
                   Ver perfil →
                 </Link>
               </div>
