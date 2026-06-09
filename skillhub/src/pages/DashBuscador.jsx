@@ -6,10 +6,43 @@ function DashBuscador() {
   const [profesionales, setProfesionales] = useState([])
   const [rubro, setRubro] = useState('')
   const [localidad, setLocalidad] = useState('')
+  const [userId, setUserId] = useState(null)
+  const [favoritos, setFavoritos] = useState([])
+  const [vistaFavoritos, setVistaFavoritos] = useState(false)
 
   useEffect(() => {
-    buscar()
+    async function init() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setUserId(user.id)
+        cargarFavoritos(user.id)
+      }
+      buscar()
+    }
+    init()
   }, [])
+
+  async function cargarFavoritos(uid) {
+    const { data } = await supabase
+      .from('favoritos')
+      .select('profesional_id')
+      .eq('buscador_id', uid)
+    if (data) setFavoritos(data.map(f => f.profesional_id))
+  }
+
+  async function toggleFavorito(profesionalId) {
+    if (!userId) return
+    const esFavorito = favoritos.includes(profesionalId)
+    if (esFavorito) {
+      await supabase.from('favoritos').delete()
+        .eq('buscador_id', userId)
+        .eq('profesional_id', profesionalId)
+      setFavoritos(favoritos.filter(id => id !== profesionalId))
+    } else {
+      await supabase.from('favoritos').insert({ buscador_id: userId, profesional_id: profesionalId })
+      setFavoritos([...favoritos, profesionalId])
+    }
+  }
 
   async function buscar() {
     let query = supabase
@@ -22,12 +55,9 @@ function DashBuscador() {
         perfiles (nombre, telefono, localidad, provincia),
         resenias (estrellas)
       `)
-
     if (rubro) query = query.eq('rubro', rubro)
-
     const { data, error } = await query
     if (error) console.error(error)
-
     if (data) {
       let resultado = data
       if (localidad) {
@@ -45,32 +75,56 @@ function DashBuscador() {
     return (suma / resenias.length).toFixed(1)
   }
 
+  const listaMostrada = vistaFavoritos
+    ? profesionales.filter(p => favoritos.includes(p.id))
+    : profesionales
+
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', padding: '30px 20px' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <h2>🔍 Buscar profesionales</h2>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <h2>{vistaFavoritos ? '❤️ Mis favoritos' : '🔍 Buscar profesionales'}</h2>
+        <button
+          onClick={() => setVistaFavoritos(!vistaFavoritos)}
+          style={{
+            background: vistaFavoritos ? '#f4a261' : 'white',
+            color: vistaFavoritos ? 'white' : '#f4a261',
+            border: '1px solid #f4a261',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '14px',
+          }}
+        >
+          {vistaFavoritos ? '← Ver todos' : '❤️ Mis favoritos'}
+        </button>
       </div>
 
-      <div style={{ background: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', marginBottom: '24px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-        <select value={rubro} onChange={(e) => setRubro(e.target.value)} style={{ flex: 1 }}>
-          <option value="">Todos los rubros</option>
-          <option value="plomero">Plomero</option>
-          <option value="electricista">Electricista</option>
-          <option value="gasista">Gasista</option>
-          <option value="constructor">Constructor</option>
-          <option value="mecanico">Mecánico</option>
-        </select>
-        <input placeholder="Localidad" value={localidad}
-          onChange={(e) => setLocalidad(e.target.value)} style={{ flex: 1 }} />
-        <button onClick={buscar}>Buscar</button>
-      </div>
+      {!vistaFavoritos && (
+        <div style={{ background: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', marginBottom: '24px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <select value={rubro} onChange={(e) => setRubro(e.target.value)} style={{ flex: 1 }}>
+            <option value="">Todos los rubros</option>
+            <option value="plomero">Plomero</option>
+            <option value="electricista">Electricista</option>
+            <option value="gasista">Gasista</option>
+            <option value="constructor">Constructor</option>
+            <option value="mecanico">Mecánico</option>
+          </select>
+          <input placeholder="Localidad" value={localidad}
+            onChange={(e) => setLocalidad(e.target.value)} style={{ flex: 1 }} />
+          <button onClick={buscar}>Buscar</button>
+        </div>
+      )}
 
       <div>
-        {profesionales.length === 0 && (
-          <p style={{ textAlign: 'center', color: '#666' }}>No se encontraron profesionales.</p>
+        {listaMostrada.length === 0 && (
+          <p style={{ textAlign: 'center', color: '#666' }}>
+            {vistaFavoritos ? 'No tenés favoritos guardados aún.' : 'No se encontraron profesionales.'}
+          </p>
         )}
-        {profesionales.map((p) => {
+        {listaMostrada.map((p) => {
           const promedio = calcularPromedio(p.resenias)
+          const esFavorito = favoritos.includes(p.id)
           return (
             <div key={p.id} style={{ background: 'white', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '20px', marginBottom: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -85,6 +139,19 @@ function DashBuscador() {
                     : <p>⭐ Sin reseñas aún</p>
                   }
                 </div>
+                <button
+                  onClick={() => toggleFavorito(p.id)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    fontSize: '24px',
+                    cursor: 'pointer',
+                    padding: '4px',
+                  }}
+                  title={esFavorito ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+                >
+                  {esFavorito ? '❤️' : '🤍'}
+                </button>
               </div>
               <div style={{ marginTop: '12px', display: 'flex', gap: '10px' }}>
                 {p.perfiles?.telefono && (
