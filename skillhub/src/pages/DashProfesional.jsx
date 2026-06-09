@@ -13,6 +13,7 @@ function DashProfesional() {
   const [chatAbierto, setChatAbierto] = useState(null)
   const [mensajesChat, setMensajesChat] = useState([])
   const [nuevoMensaje, setNuevoMensaje] = useState('')
+  const [notificaciones, setNotificaciones] = useState([])
   const archivoRef = useRef(null)
   const avatarRef = useRef(null)
   const bottomRef = useRef(null)
@@ -28,6 +29,7 @@ function DashProfesional() {
       if (profData) setProf(profData)
       cargarTrabajos(user.id)
       cargarConversaciones(user.id)
+      cargarNotificaciones(user.id)
     }
     cargarDatos()
   }, [])
@@ -35,6 +37,20 @@ function DashProfesional() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [mensajesChat])
+
+  async function cargarNotificaciones(uid) {
+    const { data } = await supabase
+      .from('notificaciones')
+      .select('*')
+      .eq('usuario_id', uid)
+      .order('created_at', { ascending: false })
+    if (data) setNotificaciones(data)
+    await supabase
+      .from('notificaciones')
+      .update({ leida: true })
+      .eq('usuario_id', uid)
+      .eq('leida', false)
+  }
 
   async function cargarTrabajos(uid) {
     const { data } = await supabase.from('trabajos').select('*').eq('profesional_id', uid)
@@ -82,6 +98,10 @@ function DashProfesional() {
 
   function formatHora(timestamp) {
     return new Date(timestamp).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+  }
+
+  function formatFecha(timestamp) {
+    return new Date(timestamp).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' })
   }
 
   async function subirAvatar() {
@@ -138,6 +158,28 @@ function DashProfesional() {
         </div>
       </div>
 
+      {notificaciones.length > 0 && (
+        <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px', marginBottom: '24px' }}>
+          <h3 style={{ marginBottom: '16px' }}>🔔 Notificaciones</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {notificaciones.map((n) => (
+              <div key={n.id} style={{
+                padding: '12px 16px',
+                borderRadius: '10px',
+                background: n.leida ? '#f8f8f8' : '#fff3e8',
+                border: n.leida ? '1px solid #eee' : '1px solid #f4a261',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}>
+                <span style={{ fontSize: '14px', color: '#333' }}>{n.mensaje}</span>
+                <span style={{ fontSize: '11px', color: '#999', marginLeft: '12px', whiteSpace: 'nowrap' }}>{formatFecha(n.created_at)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px', marginBottom: '24px' }}>
         <h3 style={{ marginBottom: '16px' }}>Datos personales</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -178,21 +220,15 @@ function DashProfesional() {
         {conversaciones.length === 0 && <p style={{ color: '#666' }}>No tenés mensajes aún.</p>}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {conversaciones.map((c) => (
-            <div
-              key={c.id}
-              onClick={() => abrirChat(c.id, c.nombre)}
+            <div key={c.id} onClick={() => abrirChat(c.id, c.nombre)}
               style={{
                 display: 'flex', alignItems: 'center', gap: '12px',
                 padding: '12px', borderRadius: '10px', cursor: 'pointer',
                 background: chatAbierto?.id === c.id ? '#fff3e8' : '#f8f8f8',
                 border: chatAbierto?.id === c.id ? '1px solid #f4a261' : '1px solid #eee',
-              }}
-            >
-              <img
-                src={c.foto || 'https://via.placeholder.com/40x40?text=?'}
-                alt={c.nombre}
-                style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
-              />
+              }}>
+              <img src={c.foto || 'https://via.placeholder.com/40x40?text=?'} alt={c.nombre}
+                style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
               <span style={{ fontWeight: '500' }}>{c.nombre}</span>
               <span style={{ marginLeft: 'auto', fontSize: '12px', color: '#f4a261' }}>Ver chat →</span>
             </div>
@@ -226,13 +262,10 @@ function DashProfesional() {
               <div ref={bottomRef} />
             </div>
             <div style={{ padding: '12px 16px', background: 'white', borderTop: '1px solid #eee', display: 'flex', gap: '8px' }}>
-              <input
-                placeholder="Escribí tu respuesta..."
-                value={nuevoMensaje}
+              <input placeholder="Escribí tu respuesta..." value={nuevoMensaje}
                 onChange={(e) => setNuevoMensaje(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && responder()}
-                style={{ flex: 1 }}
-              />
+                style={{ flex: 1 }} />
               <button onClick={responder} style={{ background: '#f4a261', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}>
                 Enviar
               </button>

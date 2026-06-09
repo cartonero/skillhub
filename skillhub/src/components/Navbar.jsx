@@ -6,19 +6,32 @@ function NavbarContenido() {
   const navigate = useNavigate()
   const location = useLocation()
   const [nombreUsuario, setNombreUsuario] = useState('')
+  const [notifs, setNotifs] = useState(0)
+  const [userId, setUserId] = useState(null)
+  const [rol, setRol] = useState(null)
 
   useEffect(() => {
-    const obtenerNombre = async () => {
+    const obtenerDatos = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
+      setUserId(user.id)
       const { data } = await supabase
         .from('perfiles')
-        .select('nombre')
+        .select('nombre, tipo')
         .eq('id', user.id)
         .single()
       if (data?.nombre) setNombreUsuario(data.nombre)
+      if (data?.tipo) setRol(data.tipo)
+      if (data?.tipo === 'profesional') {
+        const { data: nData } = await supabase
+          .from('notificaciones')
+          .select('id')
+          .eq('usuario_id', user.id)
+          .eq('leida', false)
+        if (nData) setNotifs(nData.length)
+      }
     }
-    obtenerNombre()
+    obtenerDatos()
   }, [location.pathname])
 
   const handleLogout = async () => {
@@ -60,6 +73,30 @@ function NavbarContenido() {
             Hola, <strong style={{ color: 'white' }}>{nombreUsuario.split(' ')[0]}</strong>
           </span>
         )}
+
+        {rol === 'profesional' && (
+          <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => navigate('/dash-profesional')}>
+            <span style={{ fontSize: '20px' }}>🔔</span>
+            {notifs > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '-6px',
+                right: '-8px',
+                background: '#e74c3c',
+                color: 'white',
+                borderRadius: '50%',
+                width: '18px',
+                height: '18px',
+                fontSize: '11px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 'bold',
+              }}>{notifs}</span>
+            )}
+          </div>
+        )}
+
         <button
           onClick={handleLogout}
           style={{

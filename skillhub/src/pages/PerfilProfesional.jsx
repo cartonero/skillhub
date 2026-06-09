@@ -13,11 +13,16 @@ function PerfilProfesional() {
   const [comentario, setComentario] = useState('')
   const [mensaje, setMensaje] = useState('')
   const [userId, setUserId] = useState(null)
+  const [nombreBuscador, setNombreBuscador] = useState('')
 
   useEffect(() => {
     async function cargarTodo() {
       const { data: { user } } = await supabase.auth.getUser()
-      if (user) setUserId(user.id)
+      if (user) {
+        setUserId(user.id)
+        const { data: perfilBuscador } = await supabase.from('perfiles').select('nombre').eq('id', user.id).single()
+        if (perfilBuscador?.nombre) setNombreBuscador(perfilBuscador.nombre)
+      }
       const { data: perfilData } = await supabase.from('perfiles').select('*').eq('id', id).single()
       if (perfilData) setPerfil(perfilData)
       const { data: profData } = await supabase.from('profesionales').select('*').eq('id', id).single()
@@ -34,6 +39,13 @@ function PerfilProfesional() {
     if (!userId) { setMensaje('❌ Tenés que iniciar sesión para calificar'); return }
     const { error } = await supabase.from('resenias').insert({ profesional_id: id, buscador_id: userId, estrellas, comentario })
     if (error) { setMensaje('❌ Error al enviar la reseña'); return }
+
+    await supabase.from('notificaciones').insert({
+      usuario_id: id,
+      mensaje: `⭐ ${nombreBuscador || 'Un buscador'} te dejó una reseña de ${estrellas} estrella${estrellas !== 1 ? 's' : ''}.`,
+      leida: false,
+    })
+
     setMensaje('✅ Reseña enviada correctamente')
     setComentario('')
     setEstrellas(5)
