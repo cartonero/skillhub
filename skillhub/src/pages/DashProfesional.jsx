@@ -9,8 +9,13 @@ function DashProfesional() {
   const [mensaje, setMensaje] = useState('')
   const [trabajos, setTrabajos] = useState([])
   const [descFoto, setDescFoto] = useState('')
+  const [conversaciones, setConversaciones] = useState([])
+  const [chatAbierto, setChatAbierto] = useState(null)
+  const [mensajesChat, setMensajesChat] = useState([])
+  const [nuevoMensaje, setNuevoMensaje] = useState('')
   const archivoRef = useRef(null)
   const avatarRef = useRef(null)
+  const bottomRef = useRef(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -22,13 +27,61 @@ function DashProfesional() {
       const { data: profData } = await supabase.from('profesionales').select('*').eq('id', user.id).single()
       if (profData) setProf(profData)
       cargarTrabajos(user.id)
+      cargarConversaciones(user.id)
     }
     cargarDatos()
   }, [])
 
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [mensajesChat])
+
   async function cargarTrabajos(uid) {
     const { data } = await supabase.from('trabajos').select('*').eq('profesional_id', uid)
     if (data) setTrabajos(data)
+  }
+
+  async function cargarConversaciones(uid) {
+    const { data } = await supabase
+      .from('mensajes')
+      .select('de_id, perfiles!mensajes_de_id_fkey(nombre, foto_perfil)')
+      .eq('para_id', uid)
+    if (data) {
+      const unicos = []
+      const vistos = new Set()
+      for (const m of data) {
+        if (!vistos.has(m.de_id)) {
+          vistos.add(m.de_id)
+          unicos.push({ id: m.de_id, nombre: m.perfiles?.nombre || 'Usuario', foto: m.perfiles?.foto_perfil })
+        }
+      }
+      setConversaciones(unicos)
+    }
+  }
+
+  async function abrirChat(buscadorId, buscadorNombre) {
+    setChatAbierto({ id: buscadorId, nombre: buscadorNombre })
+    const { data } = await supabase
+      .from('mensajes')
+      .select('*')
+      .or(`and(de_id.eq.${buscadorId},para_id.eq.${userId}),and(de_id.eq.${userId},para_id.eq.${buscadorId})`)
+      .order('created_at', { ascending: true })
+    if (data) setMensajesChat(data)
+  }
+
+  async function responder() {
+    if (!nuevoMensaje.trim() || !chatAbierto) return
+    await supabase.from('mensajes').insert({
+      de_id: userId,
+      para_id: chatAbierto.id,
+      contenido: nuevoMensaje.trim()
+    })
+    setNuevoMensaje('')
+    await abrirChat(chatAbierto.id, chatAbierto.nombre)
+  }
+
+  function formatHora(timestamp) {
+    return new Date(timestamp).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
   }
 
   async function subirAvatar() {
@@ -118,6 +171,74 @@ function DashProfesional() {
         <br />
         <button onClick={guardarPerfil}>Guardar perfil</button>
         {mensaje && <p style={{ marginTop: '10px' }}>{mensaje}</p>}
+      </div>
+
+      <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px', marginBottom: '24px' }}>
+        <h3 style={{ marginBottom: '16px' }}>💬 Mensajes recibidos</h3>
+        {conversaciones.length === 0 && <p style={{ color: '#666' }}>No tenés mensajes aún.</p>}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {conversaciones.map((c) => (
+            <div
+              key={c.id}
+              onClick={() => abrirChat(c.id, c.nombre)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '12px',
+                padding: '12px', borderRadius: '10px', cursor: 'pointer',
+                background: chatAbierto?.id === c.id ? '#fff3e8' : '#f8f8f8',
+                border: chatAbierto?.id === c.id ? '1px solid #f4a261' : '1px solid #eee',
+              }}
+            >
+              <img
+                src={c.foto || 'https://via.placeholder.com/40x40?text=?'}
+                alt={c.nombre}
+                style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
+              />
+              <span style={{ fontWeight: '500' }}>{c.nombre}</span>
+              <span style={{ marginLeft: 'auto', fontSize: '12px', color: '#f4a261' }}>Ver chat →</span>
+            </div>
+          ))}
+        </div>
+
+        {chatAbierto && (
+          <div style={{ marginTop: '16px', border: '1px solid #eee', borderRadius: '12px', overflow: 'hidden' }}>
+            <div style={{ background: '#1a1a2e', padding: '12px 16px' }}>
+              <p style={{ color: 'white', margin: 0, fontWeight: '500' }}>Chat con {chatAbierto.nombre}</p>
+            </div>
+            <div style={{ height: '300px', overflowY: 'auto', padding: '16px', background: '#f8f8f8', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {mensajesChat.map((m) => {
+                const esMio = m.de_id === userId
+                return (
+                  <div key={m.id} style={{ display: 'flex', justifyContent: esMio ? 'flex-end' : 'flex-start' }}>
+                    <div style={{
+                      background: esMio ? '#f4a261' : 'white',
+                      color: esMio ? 'white' : '#333',
+                      padding: '8px 12px',
+                      borderRadius: esMio ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                      maxWidth: '70%',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                    }}>
+                      <p style={{ margin: 0, fontSize: '14px' }}>{m.contenido}</p>
+                      <p style={{ margin: '4px 0 0', fontSize: '10px', opacity: 0.7, textAlign: 'right' }}>{formatHora(m.created_at)}</p>
+                    </div>
+                  </div>
+                )
+              })}
+              <div ref={bottomRef} />
+            </div>
+            <div style={{ padding: '12px 16px', background: 'white', borderTop: '1px solid #eee', display: 'flex', gap: '8px' }}>
+              <input
+                placeholder="Escribí tu respuesta..."
+                value={nuevoMensaje}
+                onChange={(e) => setNuevoMensaje(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && responder()}
+                style={{ flex: 1 }}
+              />
+              <button onClick={responder} style={{ background: '#f4a261', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}>
+                Enviar
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px' }}>
