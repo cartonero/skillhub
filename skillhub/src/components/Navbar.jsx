@@ -7,10 +7,13 @@ function NavbarContenido() {
   const location = useLocation()
   const [nombreUsuario, setNombreUsuario] = useState('')
   const [notifs, setNotifs] = useState([])
+  const [conversaciones, setConversaciones] = useState([])
   const [userId, setUserId] = useState(null)
   const [rol, setRol] = useState(null)
-  const [dropdownAbierto, setDropdownAbierto] = useState(false)
-  const dropdownRef = useRef(null)
+  const [dropdownNotif, setDropdownNotif] = useState(false)
+  const [dropdownChat, setDropdownChat] = useState(false)
+  const notifRef = useRef(null)
+  const chatRef = useRef(null)
 
   useEffect(() => {
     const obtenerDatos = async () => {
@@ -25,6 +28,7 @@ function NavbarContenido() {
       if (data?.nombre) setNombreUsuario(data.nombre)
       if (data?.tipo) setRol(data.tipo)
       if (data?.tipo === 'profesional') {
+        // Notificaciones
         const { data: nData } = await supabase
           .from('notificaciones')
           .select('*')
@@ -32,17 +36,39 @@ function NavbarContenido() {
           .order('created_at', { ascending: false })
           .limit(10)
         if (nData) setNotifs(nData)
+
+        // Conversaciones
+        const { data: mData } = await supabase
+          .from('mensajes')
+          .select('de_id, contenido, created_at, perfiles!mensajes_de_id_fkey(nombre, foto_perfil)')
+          .eq('para_id', user.id)
+          .order('created_at', { ascending: false })
+        if (mData) {
+          const unicos = []
+          const vistos = new Set()
+          for (const m of mData) {
+            if (!vistos.has(m.de_id)) {
+              vistos.add(m.de_id)
+              unicos.push({
+                id: m.de_id,
+                nombre: m.perfiles?.nombre || 'Usuario',
+                foto: m.perfiles?.foto_perfil,
+                ultimo: m.contenido,
+              })
+            }
+          }
+          setConversaciones(unicos)
+        }
       }
     }
     obtenerDatos()
   }, [location.pathname])
 
-  // Cerrar dropdown al hacer click fuera
+  // Cerrar dropdowns al click fuera
   useEffect(() => {
     function handleClickFuera(e) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownAbierto(false)
-      }
+      if (notifRef.current && !notifRef.current.contains(e.target)) setDropdownNotif(false)
+      if (chatRef.current && !chatRef.current.contains(e.target)) setDropdownChat(false)
     }
     document.addEventListener('mousedown', handleClickFuera)
     return () => document.removeEventListener('mousedown', handleClickFuera)
@@ -57,26 +83,30 @@ function NavbarContenido() {
 
   const marcarLeidas = async () => {
     if (!userId || noLeidas === 0) return
-    await supabase
-      .from('notificaciones')
-      .update({ leida: true })
-      .eq('usuario_id', userId)
-      .eq('leida', false)
+    await supabase.from('notificaciones').update({ leida: true }).eq('usuario_id', userId).eq('leida', false)
     setNotifs(prev => prev.map(n => ({ ...n, leida: true })))
   }
 
-  const toggleDropdown = () => {
-    setDropdownAbierto(prev => {
-      if (!prev) marcarLeidas()
-      return !prev
-    })
+  const toggleNotif = () => {
+    setDropdownChat(false)
+    setDropdownNotif(prev => { if (!prev) marcarLeidas(); return !prev })
+  }
+
+  const toggleChat = () => {
+    setDropdownNotif(false)
+    setDropdownChat(prev => !prev)
   }
 
   const formatFecha = (ts) => {
     if (!ts) return ''
-    const d = new Date(ts)
-    return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' })
+    return new Date(ts).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' })
   }
+
+  const iconBtn = (onClick, children) => ({
+    position: 'relative', cursor: 'pointer', padding: '4px',
+    onClick,
+    children,
+  })
 
   return (
     <nav style={{
@@ -92,16 +122,10 @@ function NavbarContenido() {
     }}>
       <div onClick={() => navigate(-1)} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
         <div style={{
-          backgroundColor: '#f4a261',
-          borderRadius: '8px',
-          width: '36px',
-          height: '36px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontWeight: 'bold',
-          fontSize: '18px',
-          color: 'white',
+          backgroundColor: '#f4a261', borderRadius: '8px',
+          width: '36px', height: '36px', display: 'flex',
+          alignItems: 'center', justifyContent: 'center',
+          fontWeight: 'bold', fontSize: '18px', color: 'white',
         }}>S</div>
         <span style={{ color: 'white', fontSize: '20px', fontWeight: 'bold' }}>SkillHub</span>
       </div>
@@ -114,114 +138,137 @@ function NavbarContenido() {
         )}
 
         {rol === 'profesional' && (
-          <div ref={dropdownRef} style={{ position: 'relative' }}>
-            {/* Campanita */}
-            <div
-              onClick={toggleDropdown}
-              style={{ position: 'relative', cursor: 'pointer', padding: '4px' }}
-            >
-              <span style={{ fontSize: '20px' }}>🔔</span>
-              {noLeidas > 0 && (
-                <span style={{
-                  position: 'absolute',
-                  top: '-2px',
-                  right: '-4px',
-                  background: '#e74c3c',
-                  color: 'white',
-                  borderRadius: '50%',
-                  width: '18px',
-                  height: '18px',
-                  fontSize: '11px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 'bold',
-                }}>{noLeidas}</span>
+          <>
+            {/* ---- CHAT ---- */}
+            <div ref={chatRef} style={{ position: 'relative' }}>
+              <div onClick={toggleChat} style={{ position: 'relative', cursor: 'pointer', padding: '4px' }}>
+                <span style={{ fontSize: '20px' }}>💬</span>
+                {conversaciones.length > 0 && (
+                  <span style={{
+                    position: 'absolute', top: '-2px', right: '-4px',
+                    background: '#f4a261', color: 'white', borderRadius: '50%',
+                    width: '18px', height: '18px', fontSize: '11px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold',
+                  }}>{conversaciones.length}</span>
+                )}
+              </div>
+
+              {dropdownChat && (
+                <div style={{
+                  position: 'absolute', top: 'calc(100% + 12px)', right: 0,
+                  width: '300px', background: 'white', borderRadius: '12px',
+                  boxShadow: '0 8px 30px rgba(0,0,0,0.18)', overflow: 'hidden', zIndex: 2000,
+                }}>
+                  <div style={{ padding: '14px 18px', borderBottom: '1px solid #f0f0f0' }}>
+                    <span style={{ fontWeight: '700', fontSize: '15px', color: '#1a1a2e' }}>💬 Mensajes</span>
+                  </div>
+                  {conversaciones.length === 0 ? (
+                    <div style={{ padding: '24px', textAlign: 'center', color: '#999', fontSize: '14px' }}>
+                      Sin mensajes aún
+                    </div>
+                  ) : (
+                    <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
+                      {conversaciones.map((c) => (
+                        <div
+                          key={c.id}
+                          onClick={() => { setDropdownChat(false); navigate(`/chat/${c.id}`) }}
+                          style={{
+                            padding: '12px 18px', borderBottom: '1px solid #f5f5f5',
+                            display: 'flex', alignItems: 'center', gap: '10px',
+                            cursor: 'pointer', transition: 'background 0.15s',
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.background = '#f9f9f9'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'white'}
+                        >
+                          <img
+                            src={c.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.nombre)}&background=f4a261&color=fff&size=80`}
+                            alt={c.nombre}
+                            style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+                          />
+                          <div style={{ minWidth: 0 }}>
+                            <p style={{ margin: 0, fontWeight: '600', fontSize: '13px', color: '#1a1a2e' }}>{c.nombre}</p>
+                            <p style={{ margin: 0, fontSize: '12px', color: '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {c.ultimo || '...'}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
-            {/* Dropdown */}
-            {dropdownAbierto && (
-              <div style={{
-                position: 'absolute',
-                top: 'calc(100% + 12px)',
-                right: 0,
-                width: '320px',
-                background: 'white',
-                borderRadius: '12px',
-                boxShadow: '0 8px 30px rgba(0,0,0,0.18)',
-                overflow: 'hidden',
-                zIndex: 2000,
-              }}>
-                <div style={{
-                  padding: '14px 18px',
-                  borderBottom: '1px solid #f0f0f0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}>
-                  <span style={{ fontWeight: '700', fontSize: '15px', color: '#1a1a2e' }}>🔔 Notificaciones</span>
-                  {noLeidas > 0 && (
-                    <span style={{
-                      background: '#e74c3c',
-                      color: 'white',
-                      borderRadius: '12px',
-                      padding: '2px 8px',
-                      fontSize: '11px',
-                      fontWeight: 'bold',
-                    }}>{noLeidas} nueva{noLeidas > 1 ? 's' : ''}</span>
-                  )}
-                </div>
-
-                {notifs.length === 0 ? (
-                  <div style={{ padding: '24px', textAlign: 'center', color: '#999', fontSize: '14px' }}>
-                    Sin notificaciones
-                  </div>
-                ) : (
-                  <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
-                    {notifs.map((n) => (
-                      <div key={n.id} style={{
-                        padding: '12px 18px',
-                        borderBottom: '1px solid #f5f5f5',
-                        background: n.leida ? 'white' : '#fff8f2',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'flex-start',
-                        gap: '10px',
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                          {!n.leida && (
-                            <div style={{
-                              width: '8px', height: '8px', borderRadius: '50%',
-                              background: '#f4a261', flexShrink: 0, marginTop: '5px',
-                            }} />
-                          )}
-                          {n.leida && <div style={{ width: '8px', flexShrink: 0 }} />}
-                          <span style={{ fontSize: '13px', color: '#333', lineHeight: '1.4' }}>{n.mensaje}</span>
-                        </div>
-                        <span style={{ fontSize: '11px', color: '#bbb', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                          {formatFecha(n.created_at)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+            {/* ---- NOTIFICACIONES ---- */}
+            <div ref={notifRef} style={{ position: 'relative' }}>
+              <div onClick={toggleNotif} style={{ position: 'relative', cursor: 'pointer', padding: '4px' }}>
+                <span style={{ fontSize: '20px' }}>🔔</span>
+                {noLeidas > 0 && (
+                  <span style={{
+                    position: 'absolute', top: '-2px', right: '-4px',
+                    background: '#e74c3c', color: 'white', borderRadius: '50%',
+                    width: '18px', height: '18px', fontSize: '11px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold',
+                  }}>{noLeidas}</span>
                 )}
               </div>
-            )}
-          </div>
+
+              {dropdownNotif && (
+                <div style={{
+                  position: 'absolute', top: 'calc(100% + 12px)', right: 0,
+                  width: '320px', background: 'white', borderRadius: '12px',
+                  boxShadow: '0 8px 30px rgba(0,0,0,0.18)', overflow: 'hidden', zIndex: 2000,
+                }}>
+                  <div style={{
+                    padding: '14px 18px', borderBottom: '1px solid #f0f0f0',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  }}>
+                    <span style={{ fontWeight: '700', fontSize: '15px', color: '#1a1a2e' }}>🔔 Notificaciones</span>
+                    {noLeidas > 0 && (
+                      <span style={{
+                        background: '#e74c3c', color: 'white', borderRadius: '12px',
+                        padding: '2px 8px', fontSize: '11px', fontWeight: 'bold',
+                      }}>{noLeidas} nueva{noLeidas > 1 ? 's' : ''}</span>
+                    )}
+                  </div>
+                  {notifs.length === 0 ? (
+                    <div style={{ padding: '24px', textAlign: 'center', color: '#999', fontSize: '14px' }}>
+                      Sin notificaciones
+                    </div>
+                  ) : (
+                    <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
+                      {notifs.map((n) => (
+                        <div key={n.id} style={{
+                          padding: '12px 18px', borderBottom: '1px solid #f5f5f5',
+                          background: n.leida ? 'white' : '#fff8f2',
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px',
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                            {!n.leida && (
+                              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f4a261', flexShrink: 0, marginTop: '5px' }} />
+                            )}
+                            {n.leida && <div style={{ width: '8px', flexShrink: 0 }} />}
+                            <span style={{ fontSize: '13px', color: '#333', lineHeight: '1.4' }}>{n.mensaje}</span>
+                          </div>
+                          <span style={{ fontSize: '11px', color: '#bbb', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                            {formatFecha(n.created_at)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </>
         )}
 
         <button
           onClick={handleLogout}
           style={{
-            backgroundColor: 'transparent',
-            border: '1px solid #f4a261',
-            color: '#f4a261',
-            padding: '6px 14px',
-            borderRadius: '6px',
-            fontSize: '13px',
-            cursor: 'pointer',
-            margin: 0,
+            backgroundColor: 'transparent', border: '1px solid #f4a261',
+            color: '#f4a261', padding: '6px 14px', borderRadius: '6px',
+            fontSize: '13px', cursor: 'pointer', margin: 0,
           }}
         >
           Cerrar sesión
