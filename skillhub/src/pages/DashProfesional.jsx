@@ -195,24 +195,7 @@ function DashProfesional() {
         </div>
       </div>
 
-      {notificaciones.length > 0 && (
-        <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px', marginBottom: '24px' }}>
-          <h3 style={{ marginBottom: '16px' }}>🔔 Notificaciones</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {notificaciones.map((n) => (
-              <div key={n.id} style={{
-                padding: '12px 16px', borderRadius: '10px',
-                background: n.leida ? '#f8f8f8' : '#fff3e8',
-                border: n.leida ? '1px solid #eee' : '1px solid #f4a261',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              }}>
-                <span style={{ fontSize: '14px', color: '#333' }}>{n.mensaje}</span>
-                <span style={{ fontSize: '11px', color: '#999', marginLeft: '12px', whiteSpace: 'nowrap' }}>{formatFecha(n.created_at)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+
 
       <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px', marginBottom: '24px' }}>
         <h3 style={{ marginBottom: '16px' }}>Datos personales</h3>

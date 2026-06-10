@@ -1,14 +1,16 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../services/supabase'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 
 function NavbarContenido() {
   const navigate = useNavigate()
   const location = useLocation()
   const [nombreUsuario, setNombreUsuario] = useState('')
-  const [notifs, setNotifs] = useState(0)
+  const [notifs, setNotifs] = useState([])
   const [userId, setUserId] = useState(null)
   const [rol, setRol] = useState(null)
+  const [dropdownAbierto, setDropdownAbierto] = useState(false)
+  const dropdownRef = useRef(null)
 
   useEffect(() => {
     const obtenerDatos = async () => {
@@ -25,18 +27,55 @@ function NavbarContenido() {
       if (data?.tipo === 'profesional') {
         const { data: nData } = await supabase
           .from('notificaciones')
-          .select('id')
+          .select('*')
           .eq('usuario_id', user.id)
-          .eq('leida', false)
-        if (nData) setNotifs(nData.length)
+          .order('created_at', { ascending: false })
+          .limit(10)
+        if (nData) setNotifs(nData)
       }
     }
     obtenerDatos()
   }, [location.pathname])
 
+  // Cerrar dropdown al hacer click fuera
+  useEffect(() => {
+    function handleClickFuera(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownAbierto(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickFuera)
+    return () => document.removeEventListener('mousedown', handleClickFuera)
+  }, [])
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
     navigate('/login')
+  }
+
+  const noLeidas = notifs.filter(n => !n.leida).length
+
+  const marcarLeidas = async () => {
+    if (!userId || noLeidas === 0) return
+    await supabase
+      .from('notificaciones')
+      .update({ leida: true })
+      .eq('usuario_id', userId)
+      .eq('leida', false)
+    setNotifs(prev => prev.map(n => ({ ...n, leida: true })))
+  }
+
+  const toggleDropdown = () => {
+    setDropdownAbierto(prev => {
+      if (!prev) marcarLeidas()
+      return !prev
+    })
+  }
+
+  const formatFecha = (ts) => {
+    if (!ts) return ''
+    const d = new Date(ts)
+    return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' })
   }
 
   return (
@@ -75,24 +114,99 @@ function NavbarContenido() {
         )}
 
         {rol === 'profesional' && (
-          <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => navigate('/dash-profesional')}>
-            <span style={{ fontSize: '20px' }}>🔔</span>
-            {notifs > 0 && (
-              <span style={{
+          <div ref={dropdownRef} style={{ position: 'relative' }}>
+            {/* Campanita */}
+            <div
+              onClick={toggleDropdown}
+              style={{ position: 'relative', cursor: 'pointer', padding: '4px' }}
+            >
+              <span style={{ fontSize: '20px' }}>🔔</span>
+              {noLeidas > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: '-2px',
+                  right: '-4px',
+                  background: '#e74c3c',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '18px',
+                  height: '18px',
+                  fontSize: '11px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 'bold',
+                }}>{noLeidas}</span>
+              )}
+            </div>
+
+            {/* Dropdown */}
+            {dropdownAbierto && (
+              <div style={{
                 position: 'absolute',
-                top: '-6px',
-                right: '-8px',
-                background: '#e74c3c',
-                color: 'white',
-                borderRadius: '50%',
-                width: '18px',
-                height: '18px',
-                fontSize: '11px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 'bold',
-              }}>{notifs}</span>
+                top: 'calc(100% + 12px)',
+                right: 0,
+                width: '320px',
+                background: 'white',
+                borderRadius: '12px',
+                boxShadow: '0 8px 30px rgba(0,0,0,0.18)',
+                overflow: 'hidden',
+                zIndex: 2000,
+              }}>
+                <div style={{
+                  padding: '14px 18px',
+                  borderBottom: '1px solid #f0f0f0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}>
+                  <span style={{ fontWeight: '700', fontSize: '15px', color: '#1a1a2e' }}>🔔 Notificaciones</span>
+                  {noLeidas > 0 && (
+                    <span style={{
+                      background: '#e74c3c',
+                      color: 'white',
+                      borderRadius: '12px',
+                      padding: '2px 8px',
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                    }}>{noLeidas} nueva{noLeidas > 1 ? 's' : ''}</span>
+                  )}
+                </div>
+
+                {notifs.length === 0 ? (
+                  <div style={{ padding: '24px', textAlign: 'center', color: '#999', fontSize: '14px' }}>
+                    Sin notificaciones
+                  </div>
+                ) : (
+                  <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
+                    {notifs.map((n) => (
+                      <div key={n.id} style={{
+                        padding: '12px 18px',
+                        borderBottom: '1px solid #f5f5f5',
+                        background: n.leida ? 'white' : '#fff8f2',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        gap: '10px',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                          {!n.leida && (
+                            <div style={{
+                              width: '8px', height: '8px', borderRadius: '50%',
+                              background: '#f4a261', flexShrink: 0, marginTop: '5px',
+                            }} />
+                          )}
+                          {n.leida && <div style={{ width: '8px', flexShrink: 0 }} />}
+                          <span style={{ fontSize: '13px', color: '#333', lineHeight: '1.4' }}>{n.mensaje}</span>
+                        </div>
+                        <span style={{ fontSize: '11px', color: '#bbb', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          {formatFecha(n.created_at)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}
