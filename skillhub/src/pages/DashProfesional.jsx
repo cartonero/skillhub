@@ -155,6 +155,28 @@ function DashProfesional() {
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '30px 20px' }}>
 
+      {perfil.nombre && (
+        <div style={{
+          background: 'linear-gradient(135deg, #1a1a2e, #0f3460)',
+          borderRadius: '16px',
+          padding: '24px 28px',
+          marginBottom: '24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+          <div>
+            <h2 style={{ color: 'white', margin: '0 0 4px', fontSize: '22px' }}>
+              ¡Hola, {perfil.nombre.split(' ')[0]}! 👋
+            </h2>
+            <p style={{ color: '#aab', margin: 0, fontSize: '14px' }}>
+              Administrá tu perfil y tus servicios
+            </p>
+          </div>
+          <div style={{ fontSize: '48px' }}>🛠️</div>
+        </div>
+      )}
+
       <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '30px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '24px' }}>
         <div style={{ position: 'relative' }}>
           <img
