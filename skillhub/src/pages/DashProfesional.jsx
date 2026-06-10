@@ -9,15 +9,10 @@ function DashProfesional() {
   const [mensaje, setMensaje] = useState('')
   const [trabajos, setTrabajos] = useState([])
   const [descFoto, setDescFoto] = useState('')
-  const [conversaciones, setConversaciones] = useState([])
-  const [chatAbierto, setChatAbierto] = useState(null)
-  const [mensajesChat, setMensajesChat] = useState([])
-  const [nuevoMensaje, setNuevoMensaje] = useState('')
   const [notificaciones, setNotificaciones] = useState([])
   const [confirmarBorrar, setConfirmarBorrar] = useState(false)
   const archivoRef = useRef(null)
   const avatarRef = useRef(null)
-  const bottomRef = useRef(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -29,15 +24,10 @@ function DashProfesional() {
       const { data: profData } = await supabase.from('profesionales').select('*').eq('id', user.id).single()
       if (profData) setProf(profData)
       cargarTrabajos(user.id)
-      cargarConversaciones(user.id)
       cargarNotificaciones(user.id)
     }
     cargarDatos()
   }, [])
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [mensajesChat])
 
   async function cargarNotificaciones(uid) {
     const { data } = await supabase
@@ -47,56 +37,13 @@ function DashProfesional() {
       .order('created_at', { ascending: false })
     if (data) setNotificaciones(data)
     const tieneSinLeer = data?.some(n => !n.leida)
-    await supabase
-      .from('notificaciones')
-      .update({ leida: true })
-      .eq('usuario_id', uid)
-      .eq('leida', false)
+    await supabase.from('notificaciones').update({ leida: true }).eq('usuario_id', uid).eq('leida', false)
     if (tieneSinLeer) window.location.reload()
   }
 
   async function cargarTrabajos(uid) {
     const { data } = await supabase.from('trabajos').select('*').eq('profesional_id', uid)
     if (data) setTrabajos(data)
-  }
-
-  async function cargarConversaciones(uid) {
-    const { data } = await supabase
-      .from('mensajes')
-      .select('de_id, perfiles!mensajes_de_id_fkey(nombre, foto_perfil)')
-      .eq('para_id', uid)
-    if (data) {
-      const unicos = []
-      const vistos = new Set()
-      for (const m of data) {
-        if (!vistos.has(m.de_id)) {
-          vistos.add(m.de_id)
-          unicos.push({ id: m.de_id, nombre: m.perfiles?.nombre || 'Usuario', foto: m.perfiles?.foto_perfil })
-        }
-      }
-      setConversaciones(unicos)
-    }
-  }
-
-  async function abrirChat(buscadorId, buscadorNombre) {
-    setChatAbierto({ id: buscadorId, nombre: buscadorNombre })
-    const { data } = await supabase
-      .from('mensajes')
-      .select('*')
-      .or(`and(de_id.eq.${buscadorId},para_id.eq.${userId}),and(de_id.eq.${userId},para_id.eq.${buscadorId})`)
-      .order('created_at', { ascending: true })
-    if (data) setMensajesChat(data)
-  }
-
-  async function responder() {
-    if (!nuevoMensaje.trim() || !chatAbierto) return
-    await supabase.from('mensajes').insert({
-      de_id: userId,
-      para_id: chatAbierto.id,
-      contenido: nuevoMensaje.trim()
-    })
-    setNuevoMensaje('')
-    await abrirChat(chatAbierto.id, chatAbierto.nombre)
   }
 
   async function borrarCuenta() {
@@ -109,10 +56,6 @@ function DashProfesional() {
     await supabase.from('perfiles').delete().eq('id', userId)
     await supabase.auth.signOut()
     navigate('/login')
-  }
-
-  function formatHora(timestamp) {
-    return new Date(timestamp).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
   }
 
   function formatFecha(timestamp) {
@@ -158,12 +101,8 @@ function DashProfesional() {
       {perfil.nombre && (
         <div style={{
           background: 'linear-gradient(135deg, #1a1a2e, #0f3460)',
-          borderRadius: '16px',
-          padding: '24px 28px',
-          marginBottom: '24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+          borderRadius: '16px', padding: '24px 28px', marginBottom: '24px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <div>
             <h2 style={{ color: 'white', margin: '0 0 4px', fontSize: '22px' }}>
@@ -178,13 +117,11 @@ function DashProfesional() {
       )}
 
       <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '30px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '24px' }}>
-        <div style={{ position: 'relative' }}>
-          <img
-            src={perfil.foto_perfil || 'https://via.placeholder.com/100x100?text=Foto'}
-            alt="Foto de perfil"
-            style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #f4a261' }}
-          />
-        </div>
+        <img
+          src={perfil.foto_perfil || 'https://via.placeholder.com/100x100?text=Foto'}
+          alt="Foto de perfil"
+          style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #f4a261' }}
+        />
         <div style={{ flex: 1 }}>
           <h2 style={{ marginBottom: '4px' }}>{perfil.nombre || 'Tu nombre'}</h2>
           <p style={{ color: '#666', marginBottom: '12px' }}>{prof.rubro} — {perfil.localidad}, {perfil.provincia}</p>
@@ -195,7 +132,24 @@ function DashProfesional() {
         </div>
       </div>
 
-
+      {notificaciones.length > 0 && (
+        <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px', marginBottom: '24px' }}>
+          <h3 style={{ marginBottom: '16px' }}>🔔 Notificaciones</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {notificaciones.map((n) => (
+              <div key={n.id} style={{
+                padding: '12px 16px', borderRadius: '10px',
+                background: n.leida ? '#f8f8f8' : '#fff3e8',
+                border: n.leida ? '1px solid #eee' : '1px solid #f4a261',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}>
+                <span style={{ fontSize: '14px', color: '#333' }}>{n.mensaje}</span>
+                <span style={{ fontSize: '11px', color: '#999', marginLeft: '12px', whiteSpace: 'nowrap' }}>{formatFecha(n.created_at)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px', marginBottom: '24px' }}>
         <h3 style={{ marginBottom: '16px' }}>Datos personales</h3>
@@ -231,151 +185,8 @@ function DashProfesional() {
         {mensaje && <p style={{ marginTop: '10px' }}>{mensaje}</p>}
       </div>
 
-      {/* MENSAJES ESTILO MESSENGER */}
-      <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', marginBottom: '24px', overflow: 'hidden' }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid #f0f0f0' }}>
-          <h3 style={{ margin: 0, fontSize: '16px' }}>💬 Mensajes</h3>
-        </div>
-
-        <div style={{ display: 'flex', height: '460px' }}>
-
-          {/* Panel izquierdo — lista de conversaciones */}
-          <div style={{
-            width: '240px',
-            flexShrink: 0,
-            borderRight: '1px solid #f0f0f0',
-            overflowY: 'auto',
-            background: '#fafafa',
-          }}>
-            {conversaciones.length === 0 ? (
-              <p style={{ color: '#999', fontSize: '13px', padding: '20px', textAlign: 'center' }}>Sin mensajes aún</p>
-            ) : (
-              conversaciones.map((c) => (
-                <div
-                  key={c.id}
-                  onClick={() => abrirChat(c.id, c.nombre)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '10px',
-                    padding: '12px 14px', cursor: 'pointer',
-                    background: chatAbierto?.id === c.id ? '#fff3e8' : 'transparent',
-                    borderLeft: chatAbierto?.id === c.id ? '3px solid #f4a261' : '3px solid transparent',
-                    transition: 'background 0.15s',
-                  }}
-                  onMouseEnter={e => { if (chatAbierto?.id !== c.id) e.currentTarget.style.background = '#f5f5f5' }}
-                  onMouseLeave={e => { if (chatAbierto?.id !== c.id) e.currentTarget.style.background = 'transparent' }}
-                >
-                  <img
-                    src={c.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.nombre)}&background=f4a261&color=fff&size=80`}
-                    alt={c.nombre}
-                    style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-                  />
-                  <span style={{ fontSize: '13px', fontWeight: chatAbierto?.id === c.id ? '600' : '500', color: '#1a1a2e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {c.nombre}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Panel derecho — ventana de chat */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-            {!chatAbierto ? (
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#bbb' }}>
-                <span style={{ fontSize: '40px', marginBottom: '10px' }}>💬</span>
-                <p style={{ fontSize: '14px', margin: 0 }}>Seleccioná una conversación</p>
-              </div>
-            ) : (
-              <>
-                {/* Header del chat */}
-                <div style={{
-                  background: '#1a1a2e', padding: '12px 16px',
-                  display: 'flex', alignItems: 'center', gap: '10px',
-                }}>
-                  <img
-                    src={conversaciones.find(c => c.id === chatAbierto.id)?.foto ||
-                      `https://ui-avatars.com/api/?name=${encodeURIComponent(chatAbierto.nombre)}&background=f4a261&color=fff&size=80`}
-                    alt={chatAbierto.nombre}
-                    style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #f4a261' }}
-                  />
-                  <div>
-                    <p style={{ color: 'white', margin: 0, fontWeight: '600', fontSize: '14px' }}>{chatAbierto.nombre}</p>
-                    <p style={{ color: '#8899aa', margin: 0, fontSize: '11px' }}>Conversación privada</p>
-                  </div>
-                </div>
-
-                {/* Burbujas */}
-                <div style={{
-                  flex: 1, overflowY: 'auto', padding: '16px',
-                  background: '#f0f2f5', display: 'flex', flexDirection: 'column', gap: '6px',
-                }}>
-                  {mensajesChat.length === 0 && (
-                    <p style={{ textAlign: 'center', color: '#999', fontSize: '13px', marginTop: '20px' }}>No hay mensajes aún.</p>
-                  )}
-                  {mensajesChat.map((m) => {
-                    const esMio = m.de_id === userId
-                    return (
-                      <div key={m.id} style={{ display: 'flex', justifyContent: esMio ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: '6px' }}>
-                        {!esMio && (
-                          <img
-                            src={conversaciones.find(c => c.id === chatAbierto.id)?.foto ||
-                              `https://ui-avatars.com/api/?name=${encodeURIComponent(chatAbierto.nombre)}&background=f4a261&color=fff&size=80`}
-                            alt=""
-                            style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-                          />
-                        )}
-                        <div style={{
-                          background: esMio ? '#f4a261' : 'white',
-                          color: esMio ? 'white' : '#1a1a2e',
-                          padding: '8px 12px',
-                          borderRadius: esMio ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                          maxWidth: '65%',
-                          boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-                        }}>
-                          <p style={{ margin: 0, fontSize: '13px', lineHeight: '1.4' }}>{m.contenido}</p>
-                          <p style={{ margin: '3px 0 0', fontSize: '10px', opacity: 0.65, textAlign: 'right' }}>{formatHora(m.created_at)}</p>
-                        </div>
-                      </div>
-                    )
-                  })}
-                  <div ref={bottomRef} />
-                </div>
-
-                {/* Input */}
-                <div style={{
-                  padding: '10px 14px', background: 'white',
-                  borderTop: '1px solid #eee', display: 'flex', gap: '8px', alignItems: 'center',
-                }}>
-                  <input
-                    placeholder="Escribí un mensaje..."
-                    value={nuevoMensaje}
-                    onChange={(e) => setNuevoMensaje(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && responder()}
-                    style={{
-                      flex: 1, border: '1px solid #e0e0e0', borderRadius: '20px',
-                      padding: '8px 16px', fontSize: '13px', outline: 'none',
-                      background: '#f5f5f5',
-                    }}
-                  />
-                  <button
-                    onClick={responder}
-                    style={{
-                      background: '#f4a261', color: 'white', border: 'none',
-                      width: '36px', height: '36px', borderRadius: '50%',
-                      cursor: 'pointer', fontSize: '16px', display: 'flex',
-                      alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                    }}
-                  >
-                    ➤
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
       <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px', marginBottom: '24px' }}>
-        <h3 style={{ marginBottom: '16px' }}>Portfolio de trabajos</h3>
+        <h3 style={{ marginBottom: '16px' }}>📸 Portfolio de trabajos</h3>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
           <input type="file" accept="image/*" ref={archivoRef} style={{ maxWidth: '200px' }} />
           <input placeholder="Descripción del trabajo" value={descFoto}
@@ -399,26 +210,20 @@ function DashProfesional() {
           Al borrar tu cuenta se eliminarán todos tus datos: perfil, trabajos, reseñas y mensajes. Esta acción no se puede deshacer.
         </p>
         {!confirmarBorrar ? (
-          <button
-            onClick={() => setConfirmarBorrar(true)}
-            style={{ background: 'transparent', border: '1px solid #e74c3c', color: '#e74c3c', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}
-          >
+          <button onClick={() => setConfirmarBorrar(true)}
+            style={{ background: 'transparent', border: '1px solid #e74c3c', color: '#e74c3c', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}>
             🗑️ Borrar mi cuenta
           </button>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <p style={{ color: '#e74c3c', fontWeight: '500' }}>¿Estás seguro? Esta acción es irreversible.</p>
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                onClick={borrarCuenta}
-                style={{ background: '#e74c3c', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}
-              >
+              <button onClick={borrarCuenta}
+                style={{ background: '#e74c3c', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}>
                 Sí, borrar todo
               </button>
-              <button
-                onClick={() => setConfirmarBorrar(false)}
-                style={{ background: '#eee', color: '#333', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}
-              >
+              <button onClick={() => setConfirmarBorrar(false)}
+                style={{ background: '#eee', color: '#333', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}>
                 Cancelar
               </button>
             </div>
