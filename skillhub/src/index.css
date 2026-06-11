@@ -4,61 +4,111 @@
   box-sizing: border-box;
 }
 
+/* ===== VARIABLES DE COLOR ===== */
+:root {
+  --navy:       #1a1a2e;
+  --navy-mid:   #0f3460;
+  --navy-deep:  #0d0d1a;
+  --orange:     #e07b39;
+  --orange-hover: #c9622a;
+  --orange-light: #fff3e8;
+  --green:      #1e8449;
+  --red:        #c0392b;
+  --text-dark:  #1a1a2e;
+  --text-mid:   #444;
+  --text-soft:  #666;
+  --text-hint:  #999;
+  --border:     #e0e0e0;
+  --surface:    #ffffff;
+  --bg-soft:    #f7f7f7;
+}
+
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: radial-gradient(ellipse at 70% 30%, #0f3460 0%, #1a1a2e 60%, #0d0d1a 100%);
+  background: radial-gradient(ellipse at 70% 30%, var(--navy-mid) 0%, var(--navy) 60%, var(--navy-deep) 100%);
   min-height: 100vh;
-  color: #333;
+  color: var(--text-mid);
 }
 
 h1, h2, h3 {
-  color: #1a1a2e;
+  color: var(--text-dark);
+  font-weight: 600;
 }
 
+/* ===== INPUTS ===== */
 input, select, textarea {
-  padding: 10px;
+  padding: 10px 12px;
   margin: 6px 4px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
   font-size: 14px;
   width: 100%;
   max-width: 400px;
+  color: var(--text-dark);
+  background: var(--surface);
+  transition: border-color 0.2s;
+  outline: none;
 }
 
+input:focus, select:focus, textarea:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px rgba(224, 123, 57, 0.12);
+}
+
+/* ===== BOTONES ===== */
 button {
   padding: 10px 20px;
   margin: 6px 4px;
-  background-color: #f4a261;
+  background-color: var(--orange);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
 }
 
 button:hover {
-  background-color: #e76f51;
+  background-color: var(--orange-hover);
 }
 
+button:active {
+  transform: scale(0.98);
+}
+
+/* ===== LINKS ===== */
 a {
-  color: #e76f51;
+  color: var(--orange);
   text-decoration: none;
+  transition: color 0.2s;
 }
 
 a:hover {
+  color: var(--orange-hover);
   text-decoration: underline;
 }
 
 hr {
   margin: 20px 0;
   border: none;
-  border-top: 1px solid #ddd;
+  border-top: 1px solid var(--border);
 }
 
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.15);
+  border-radius: 3px;
+}
 
 /* ===== RESPONSIVE ===== */
 
-/* Tablet (menos de 768px) */
 @media (max-width: 768px) {
   input, select, textarea {
     max-width: 100%;
@@ -79,7 +129,6 @@ hr {
   }
 }
 
-/* Celular (menos de 480px) */
 @media (max-width: 480px) {
   h2 {
     font-size: 20px;
