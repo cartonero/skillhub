@@ -6,7 +6,8 @@
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f0f2f5;
+  background: radial-gradient(ellipse at 70% 30%, #0f3460 0%, #1a1a2e 60%, #0d0d1a 100%);
+  min-height: 100vh;
   color: #333;
 }
 
@@ -63,19 +64,16 @@ hr {
     max-width: 100%;
   }
 
-  /* Header del perfil profesional */
   div[style*="display: flex"][style*="gap: 24px"] {
     flex-direction: column;
     align-items: center;
     text-align: center;
   }
 
-  /* Grilla de datos personales */
   div[style*="grid-template-columns: 1fr 1fr"] {
     grid-template-columns: 1fr !important;
   }
 
-  /* Buscador — filtros apilados */
   div[style*="display: flex"][style*="gap: 10px"] {
     flex-direction: column;
   }
@@ -91,17 +89,14 @@ hr {
     font-size: 16px;
   }
 
-  /* Cards del buscador */
   div[style*="border-radius: 12px"] {
     padding: 14px !important;
   }
 
-  /* Portfolio en una columna */
   div[style*="grid-template-columns: repeat(auto-fill"] {
     grid-template-columns: 1fr !important;
   }
 
-  /* Botones de perfil apilados */
   div[style*="flex-direction: column"][style*="gap: 10px"] {
     width: 100%;
   }
