@@ -25,7 +25,7 @@
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: radial-gradient(ellipse at 70% 30%, var(--navy-mid) 0%, var(--navy) 60%, var(--navy-deep) 100%);
+  background: radial-gradient(ellipse at 70% 30%, #2a4a7f 0%, #1e3a5f 60%, #152840 100%);
   min-height: 100vh;
   color: var(--text-mid);
 }
