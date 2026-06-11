@@ -6,37 +6,50 @@
 
 /* ===== VARIABLES DE COLOR ===== */
 :root {
-  --navy:       #1a1a2e;
-  --navy-mid:   #0f3460;
-  --navy-deep:  #0d0d1a;
-  --orange:     #e07b39;
+  --navy:         #1a1a2e;
+  --navy-mid:     #0f3460;
+  --navy-deep:    #0d0d1a;
+  --orange:       #e07b39;
   --orange-hover: #c9622a;
   --orange-light: #fff3e8;
-  --green:      #1e8449;
-  --red:        #c0392b;
-  --text-dark:  #1a1a2e;
-  --text-mid:   #444;
-  --text-soft:  #666;
-  --text-hint:  #999;
-  --border:     #e0e0e0;
-  --surface:    #ffffff;
-  --bg-soft:    #f7f7f7;
+  --green:        #1e8449;
+  --red:          #c0392b;
+  --text-dark:    #1a1a2e;
+  --text-mid:     #444;
+  --text-soft:    #666;
+  --text-hint:    #999;
+  --border:       #e0e0e0;
+  --surface:      #ffffff;
+  --bg-soft:      #f7f7f7;
 }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
   background: radial-gradient(ellipse at 70% 30%, #2a4a7f 0%, #1e3a5f 60%, #152840 100%);
   min-height: 100vh;
   color: var(--text-mid);
+  -webkit-font-smoothing: antialiased;
 }
 
 h1, h2, h3 {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
   color: var(--text-dark);
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+h1 { font-size: 28px; }
+h2 { font-size: 22px; }
+h3 { font-size: 17px; }
+
+p {
+  font-family: 'Inter', sans-serif;
+  line-height: 1.6;
 }
 
 /* ===== INPUTS ===== */
 input, select, textarea {
+  font-family: 'Inter', sans-serif;
   padding: 10px 12px;
   margin: 6px 4px;
   border: 1.5px solid var(--border);
@@ -57,6 +70,7 @@ input:focus, select:focus, textarea:focus {
 
 /* ===== BOTONES ===== */
 button {
+  font-family: 'Inter', sans-serif;
   padding: 10px 20px;
   margin: 6px 4px;
   background-color: var(--orange);
@@ -79,6 +93,7 @@ button:active {
 
 /* ===== LINKS ===== */
 a {
+  font-family: 'Inter', sans-serif;
   color: var(--orange);
   text-decoration: none;
   transition: color 0.2s;
@@ -96,23 +111,13 @@ hr {
 }
 
 /* ===== SCROLLBAR ===== */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.15);
-  border-radius: 3px;
-}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
 
 /* ===== RESPONSIVE ===== */
-
 @media (max-width: 768px) {
-  input, select, textarea {
-    max-width: 100%;
-  }
+  input, select, textarea { max-width: 100%; }
 
   div[style*="display: flex"][style*="gap: 24px"] {
     flex-direction: column;
@@ -130,17 +135,10 @@ hr {
 }
 
 @media (max-width: 480px) {
-  h2 {
-    font-size: 20px;
-  }
+  h2 { font-size: 20px; }
+  h3 { font-size: 16px; }
 
-  h3 {
-    font-size: 16px;
-  }
-
-  div[style*="border-radius: 12px"] {
-    padding: 14px !important;
-  }
+  div[style*="border-radius: 12px"] { padding: 14px !important; }
 
   div[style*="grid-template-columns: repeat(auto-fill"] {
     grid-template-columns: 1fr !important;
