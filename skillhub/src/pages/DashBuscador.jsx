@@ -1,3 +1,4 @@
+import { RUBROS, getRubroLabel, getRubroColor } from '../services/rubros'
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../services/supabase'
 import { Link } from 'react-router-dom'
@@ -99,13 +100,7 @@ function DashBuscador() {
     return (suma / resenias.length).toFixed(1)
   }
 
-  const rubroColores = {
-    plomero: { bg: '#e8f4fd', color: '#1a6fa8' },
-    electricista: { bg: '#fef9e7', color: '#b7950b' },
-    gasista: { bg: '#fdebd0', color: '#ca6f1e' },
-    constructor: { bg: '#eafaf1', color: '#1e8449' },
-    mecanico: { bg: '#f4ecf7', color: '#7d3c98' },
-  }
+
 
   const listaMostrada = vistaFavoritos
     ? profesionales.filter(p => favoritos.includes(p.id))
@@ -233,11 +228,7 @@ function DashBuscador() {
         <div style={{ background: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', marginBottom: '24px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <select value={rubro} onChange={(e) => setRubro(e.target.value)} style={{ flex: 1 }}>
             <option value="">Todos los rubros</option>
-            <option value="plomero">Plomero</option>
-            <option value="electricista">Electricista</option>
-            <option value="gasista">Gasista</option>
-            <option value="constructor">Constructor</option>
-            <option value="mecanico">Mecánico</option>
+            {RUBROS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
           </select>
           <input placeholder="Localidad" value={localidad}
             onChange={(e) => setLocalidad(e.target.value)} style={{ flex: 1 }} />
@@ -255,7 +246,7 @@ function DashBuscador() {
         {listaMostrada.map((p) => {
           const promedio = calcularPromedio(p.resenias)
           const esFavorito = favoritos.includes(p.id)
-          const colorRubro = rubroColores[p.rubro] || { bg: '#f0f0f0', color: '#555' }
+          const colorRubro = getRubroColor(p.rubro)
           const descripcionCorta = p.descripcion && p.descripcion.length > 100
             ? p.descripcion.substring(0, 100) + '...'
             : p.descripcion || 'Sin descripción'

@@ -1,10 +1,11 @@
+import { RUBROS } from '../services/rubros'
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../services/supabase'
 import { useNavigate } from 'react-router-dom'
 
 function DashProfesional() {
   const [perfil, setPerfil] = useState({ nombre: '', telefono: '', localidad: '', provincia: '', foto_perfil: '' })
-  const [prof, setProf] = useState({ rubro: 'plomero', descripcion: '', disponible: true })
+  const [prof, setProf] = useState({ rubro: 'albanil', descripcion: '', disponible: true })
   const [userId, setUserId] = useState(null)
   const [mensaje, setMensaje] = useState('')
   const [notificaciones, setNotificaciones] = useState([])
@@ -185,11 +186,7 @@ function DashProfesional() {
         </div>
         <h3 style={{ margin: '16px 0' }}>Datos profesionales</h3>
         <select value={prof.rubro} onChange={(e) => setProf({ ...prof, rubro: e.target.value })}>
-          <option value="plomero">Plomero</option>
-          <option value="electricista">Electricista</option>
-          <option value="gasista">Gasista</option>
-          <option value="constructor">Constructor</option>
-          <option value="mecanico">Mecánico</option>
+          {RUBROS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
         </select>
         <textarea placeholder="Describí tu experiencia y servicios" value={prof.descripcion || ''}
           onChange={(e) => setProf({ ...prof, descripcion: e.target.value })}
