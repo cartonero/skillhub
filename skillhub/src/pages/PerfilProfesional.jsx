@@ -14,21 +14,21 @@ function Estrellas({ valor, onChange }) {
   const [hover, setHover] = useState(0)
   return (
     <div style={{ display: 'flex', gap: '4px' }}>
-      {[1, 2, 3, 4, 5].map((n) => (
-        <span
-          key={n}
-          onClick={() => onChange && onChange(n)}
+      {[1,2,3,4,5].map((n) => (
+        <span key={n} onClick={() => onChange && onChange(n)}
           onMouseEnter={() => onChange && setHover(n)}
           onMouseLeave={() => onChange && setHover(0)}
-          style={{
-            fontSize: '28px',
-            cursor: onChange ? 'pointer' : 'default',
-            color: n <= (hover || valor) ? '#f4a261' : '#ddd',
-            transition: 'color 0.15s, transform 0.15s',
-            transform: onChange && n <= (hover || valor) ? 'scale(1.15)' : 'scale(1)',
-            display: 'inline-block',
-          }}
-        >★</span>
+          style={{ fontSize: '28px', cursor: onChange ? 'pointer' : 'default', color: n <= (hover || valor) ? '#f4a261' : '#ddd', transition: 'color 0.15s, transform 0.15s', transform: onChange && n <= (hover || valor) ? 'scale(1.15)' : 'scale(1)', display: 'inline-block' }}>★</span>
+      ))}
+    </div>
+  )
+}
+
+function EstrellasChicas({ valor }) {
+  return (
+    <div style={{ display: 'flex', gap: '1px' }}>
+      {[1,2,3,4,5].map(n => (
+        <span key={n} style={{ fontSize: '13px', color: n <= valor ? '#f4a261' : '#ddd' }}>★</span>
       ))}
     </div>
   )
@@ -40,7 +40,6 @@ function Lightbox({ imagen, onClose }) {
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [onClose])
-
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, animation: 'fadeIn 0.2s ease' }}>
       <style>{`@keyframes fadeIn{from{opacity:0}to{opacity:1}} @keyframes zoomIn{from{transform:scale(0.85);opacity:0}to{transform:scale(1);opacity:1}}`}</style>
@@ -61,30 +60,25 @@ function Carrusel({ imagenes, onImagenClick }) {
   const siguiente = () => setIndice((indice + 1) % total)
   const visibles = []
   for (let i = 0; i < Math.min(3, total); i++) visibles.push(imagenes[(indice + i) % total])
-
   return (
     <div style={{ position: 'relative' }}>
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(3, total)}, 1fr)`, gap: '12px' }}>
         {visibles.map((img, i) => (
           <div key={img.id + '-' + i} onClick={() => onImagenClick(img)}
-            style={{ borderRadius: '10px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer', transition: 'transform 0.2s', position: 'relative' }}
+            style={{ borderRadius: '10px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer', transition: 'transform 0.2s' }}
             onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.03)'}
             onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
           >
             <img src={img.foto_url} alt={img.descripcion} style={{ width: '100%', height: '160px', objectFit: 'cover', display: 'block' }} />
-            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.25)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0)'}
-            />
             {img.descripcion && <p style={{ padding: '8px', fontSize: '12px', color: '#555', margin: 0, background: 'white' }}>{img.descripcion}</p>}
           </div>
         ))}
       </div>
       {total > 3 && (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', marginTop: '12px' }}>
-          <button onClick={anterior} style={{ background: '#1a1a2e', color: 'white', border: 'none', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: 0, padding: 0 }}>‹</button>
+          <button onClick={anterior} style={{ background: '#1a1a2e', color: 'white', border: 'none', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', fontSize: '14px', margin: 0, padding: 0 }}>‹</button>
           <span style={{ fontSize: '12px', color: '#999' }}>{indice + 1} - {Math.min(indice + 3, total)} de {total}</span>
-          <button onClick={siguiente} style={{ background: '#1a1a2e', color: 'white', border: 'none', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: 0, padding: 0 }}>›</button>
+          <button onClick={siguiente} style={{ background: '#1a1a2e', color: 'white', border: 'none', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', fontSize: '14px', margin: 0, padding: 0 }}>›</button>
         </div>
       )}
       {total > 1 && total <= 3 && (
@@ -110,15 +104,20 @@ function PerfilProfesional() {
   const [mensaje, setMensaje] = useState('')
   const [userId, setUserId] = useState(null)
   const [nombreBuscador, setNombreBuscador] = useState('')
+  const [fotoBuscador, setFotoBuscador] = useState(null)
   const [lightbox, setLightbox] = useState(null)
+  const [editandoResenia, setEditandoResenia] = useState(null)
+  const [editEstrellas, setEditEstrellas] = useState(5)
+  const [editComentario, setEditComentario] = useState('')
 
   useEffect(() => {
     async function cargarTodo() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setUserId(user.id)
-        const { data: pb } = await supabase.from('perfiles').select('nombre').eq('id', user.id).single()
+        const { data: pb } = await supabase.from('perfiles').select('nombre, foto_perfil').eq('id', user.id).single()
         if (pb?.nombre) setNombreBuscador(pb.nombre)
+        if (pb?.foto_perfil) setFotoBuscador(pb.foto_perfil)
       }
       const { data: perfilData } = await supabase.from('perfiles').select('*').eq('id', id).single()
       if (perfilData) setPerfil(perfilData)
@@ -131,7 +130,7 @@ function PerfilProfesional() {
   }, [id])
 
   async function cargarResenias() {
-    const { data } = await supabase.from('resenias').select('*, perfiles(nombre)').eq('profesional_id', id).order('created_at', { ascending: false })
+    const { data } = await supabase.from('resenias').select('*, perfiles(nombre, foto_perfil)').eq('profesional_id', id).order('created_at', { ascending: false })
     if (data) setResenias(data)
   }
 
@@ -164,11 +163,23 @@ function PerfilProfesional() {
     await cargarResenias()
   }
 
+  async function guardarEdicion(reseniaId) {
+    await supabase.from('resenias').update({ estrellas: editEstrellas, comentario: editComentario }).eq('id', reseniaId)
+    setEditandoResenia(null)
+    await cargarResenias()
+  }
+
+  async function eliminarResenia(reseniaId) {
+    if (!window.confirm('¿Estás seguro que querés eliminar esta reseña? Esta acción no se puede deshacer.')) return
+    await supabase.from('resenias').delete().eq('id', reseniaId)
+    await cargarResenias()
+  }
+
   const promedio = resenias.length > 0
     ? (resenias.reduce((sum, r) => sum + r.estrellas, 0) / resenias.length).toFixed(1)
     : null
 
-  const distribucion = [5, 4, 3, 2, 1].map(n => ({
+  const distribucion = [5,4,3,2,1].map(n => ({
     estrellas: n,
     cantidad: resenias.filter(r => r.estrellas === n).length,
     porcentaje: resenias.length > 0 ? Math.round((resenias.filter(r => r.estrellas === n).length / resenias.length) * 100) : 0
@@ -189,8 +200,7 @@ function PerfilProfesional() {
         <div style={{ padding: '0 30px 30px' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: '20px', marginTop: '-40px', marginBottom: '16px' }}>
             <img src={perfil.foto_perfil || `https://ui-avatars.com/api/?name=${encodeURIComponent(perfil.nombre || 'P')}&background=f4a261&color=fff&size=120`}
-              alt="Foto de perfil"
-              style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '4px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.2)', flexShrink: 0 }} />
+              alt="Foto de perfil" style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '4px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.2)', flexShrink: 0 }} />
             <div style={{ paddingBottom: '4px' }}>
               <h2 style={{ margin: '0 0 4px', color: '#1a1a2e' }}>{perfil.nombre || 'Sin nombre'}</h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
@@ -206,16 +216,9 @@ function PerfilProfesional() {
               : <span style={{ fontSize: '14px', color: '#999' }}>⭐ Sin reseñas aún</span>}
           </div>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {perfil.telefono && (
-              <a href={`https://wa.me/${perfil.telefono}`} target="_blank"
-                style={{ background: '#25d366', color: 'white', padding: '10px 18px', borderRadius: '8px', textDecoration: 'none', fontSize: '14px' }}>📱 WhatsApp</a>
-            )}
-            {userId && userId !== id && (
-              <button onClick={() => navigate(`/chat/${id}`)}
-                style={{ background: '#1a1a2e', color: 'white', padding: '10px 18px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '14px' }}>💬 Enviar mensaje</button>
-            )}
-            <button onClick={() => navigate('/dash-buscador')}
-              style={{ background: '#f0f0f0', color: '#555', padding: '10px 18px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '14px' }}>← Volver</button>
+            {perfil.telefono && <a href={`https://wa.me/${perfil.telefono}`} target="_blank" style={{ background: '#25d366', color: 'white', padding: '10px 18px', borderRadius: '8px', textDecoration: 'none', fontSize: '14px' }}>📱 WhatsApp</a>}
+            {userId && userId !== id && <button onClick={() => navigate(`/chat/${id}`)} style={{ background: '#1a1a2e', color: 'white', padding: '10px 18px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '14px' }}>💬 Enviar mensaje</button>}
+            <button onClick={() => navigate('/dash-buscador')} style={{ background: '#f0f0f0', color: '#555', padding: '10px 18px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '14px' }}>← Volver</button>
           </div>
         </div>
       </div>
@@ -230,7 +233,6 @@ function PerfilProfesional() {
             : <Carrusel imagenes={port.imagenes} onImagenClick={setLightbox} />}
         </div>
       ))}
-
       {portafolios.length === 0 && (
         <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px', marginBottom: '24px' }}>
           <h3 style={{ marginBottom: '16px' }}>📸 Portfolio de trabajos</h3>
@@ -238,27 +240,20 @@ function PerfilProfesional() {
         </div>
       )}
 
-      {/* SECCIÓN DE RESEÑAS ESTILO MERCADO LIBRE */}
+      {/* RESEÑAS */}
       <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', overflow: 'hidden', marginBottom: '24px' }}>
-
-        {/* Header de reseñas */}
         <div style={{ padding: '24px 24px 0' }}>
           <h3 style={{ margin: '0 0 20px' }}>⭐ Calificaciones y reseñas</h3>
 
           {resenias.length > 0 && (
             <div style={{ display: 'flex', gap: '24px', alignItems: 'center', padding: '20px', background: '#fafafa', borderRadius: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
-              {/* Promedio grande */}
               <div style={{ textAlign: 'center', minWidth: '80px' }}>
                 <div style={{ fontSize: '52px', fontWeight: '700', color: '#1a1a2e', lineHeight: 1 }}>{promedio}</div>
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '2px', margin: '6px 0' }}>
-                  {[1,2,3,4,5].map(n => (
-                    <span key={n} style={{ fontSize: '16px', color: n <= Math.round(promedio) ? '#f4a261' : '#ddd' }}>★</span>
-                  ))}
+                  {[1,2,3,4,5].map(n => <span key={n} style={{ fontSize: '16px', color: n <= Math.round(promedio) ? '#f4a261' : '#ddd' }}>★</span>)}
                 </div>
                 <div style={{ fontSize: '12px', color: '#888' }}>{resenias.length} reseña{resenias.length !== 1 ? 's' : ''}</div>
               </div>
-
-              {/* Barras de distribución */}
               <div style={{ flex: 1, minWidth: '160px' }}>
                 {distribucion.map(d => (
                   <div key={d.estrellas} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
@@ -275,54 +270,69 @@ function PerfilProfesional() {
           )}
         </div>
 
-        {/* Formulario */}
+        {/* Formulario nueva reseña */}
         <div style={{ padding: '0 24px 24px', borderBottom: '1px solid #f0f0f0' }}>
           <h4 style={{ margin: '0 0 14px', color: '#333', fontSize: '15px' }}>Dejá tu opinión</h4>
           <div style={{ marginBottom: '14px' }}>
             <p style={{ fontSize: '13px', color: '#666', margin: '0 0 8px' }}>¿Cómo calificás el servicio?</p>
             <Estrellas valor={estrellas} onChange={setEstrellas} />
           </div>
-          <textarea
-            placeholder="Contá tu experiencia con este profesional..."
-            value={comentario}
+          <textarea placeholder="Contá tu experiencia con este profesional..." value={comentario}
             onChange={(e) => setComentario(e.target.value)}
-            style={{ width: '100%', maxWidth: '100%', height: '90px', resize: 'vertical', borderRadius: '8px', border: '1.5px solid #e0e0e0', padding: '10px 12px', fontSize: '14px', fontFamily: 'inherit' }}
-          />
+            style={{ width: '100%', maxWidth: '100%', height: '90px', resize: 'vertical', borderRadius: '8px', border: '1.5px solid #e0e0e0', padding: '10px 12px', fontSize: '14px', fontFamily: 'inherit' }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px', flexWrap: 'wrap' }}>
-            <button onClick={enviarResenia} style={{ padding: '10px 24px', fontSize: '14px', margin: 0 }}>
-              Publicar reseña
-            </button>
-            {mensaje && (
-              <span style={{ fontSize: '13px', color: mensaje.includes('✅') ? '#1e8449' : '#c0392b', fontWeight: '500' }}>
-                {mensaje}
-              </span>
-            )}
+            <button onClick={enviarResenia} style={{ padding: '10px 24px', fontSize: '14px', margin: 0 }}>Publicar reseña</button>
+            {mensaje && <span style={{ fontSize: '13px', color: mensaje.includes('✅') ? '#1e8449' : '#c0392b', fontWeight: '500' }}>{mensaje}</span>}
           </div>
         </div>
 
         {/* Lista de reseñas */}
         <div style={{ padding: '0 24px 8px' }}>
-          {resenias.length === 0 && (
-            <p style={{ color: '#999', fontSize: '14px', textAlign: 'center', padding: '24px 0' }}>Todavía no hay reseñas. ¡Sé el primero!</p>
-          )}
+          {resenias.length === 0 && <p style={{ color: '#999', fontSize: '14px', textAlign: 'center', padding: '24px 0' }}>Todavía no hay reseñas. ¡Sé el primero!</p>}
           {resenias.map((r, i) => (
             <div key={r.id} style={{ padding: '18px 0', borderBottom: i < resenias.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#1a1a2e', color: '#f4a261', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '600', fontSize: '14px', flexShrink: 0 }}>
-                  {(r.perfiles?.nombre || 'U')[0].toUpperCase()}
-                </div>
-                <div>
-                  <p style={{ margin: 0, fontWeight: '600', fontSize: '14px', color: '#1a1a2e' }}>{r.perfiles?.nombre || 'Usuario'}</p>
-                  <div style={{ display: 'flex', gap: '2px', marginTop: '2px' }}>
-                    {[1,2,3,4,5].map(n => (
-                      <span key={n} style={{ fontSize: '13px', color: n <= r.estrellas ? '#f4a261' : '#ddd' }}>★</span>
-                    ))}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                {/* Avatar */}
+                {r.perfiles?.foto_perfil
+                  ? <img src={r.perfiles.foto_perfil} alt={r.perfiles?.nombre} style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                  : <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#1a1a2e', color: '#f4a261', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '600', fontSize: '14px', flexShrink: 0 }}>
+                      {(r.perfiles?.nombre || 'U')[0].toUpperCase()}
+                    </div>
+                }
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
+                    <div>
+                      <p style={{ margin: '0 0 2px', fontWeight: '600', fontSize: '14px', color: '#1a1a2e' }}>{r.perfiles?.nombre || 'Usuario'}</p>
+                      <EstrellasChicas valor={r.estrellas} />
+                    </div>
+                    {/* Botones editar/eliminar solo para el autor */}
+                    {userId === r.buscador_id && (
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button onClick={() => { setEditandoResenia(r.id); setEditEstrellas(r.estrellas); setEditComentario(r.comentario) }}
+                          style={{ background: '#f0f0f0', color: '#555', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', margin: 0 }}>✏️ Editar</button>
+                        <button onClick={() => eliminarResenia(r.id)}
+                          style={{ background: '#fde8e8', color: '#c0392b', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', margin: 0 }}>🗑️ Eliminar</button>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Formulario de edición inline */}
+                  {editandoResenia === r.id ? (
+                    <div style={{ marginTop: '10px', background: '#f8f8f8', padding: '12px', borderRadius: '8px' }}>
+                      <p style={{ fontSize: '12px', color: '#666', margin: '0 0 6px' }}>Nueva calificación:</p>
+                      <Estrellas valor={editEstrellas} onChange={setEditEstrellas} />
+                      <textarea value={editComentario} onChange={(e) => setEditComentario(e.target.value)}
+                        style={{ width: '100%', maxWidth: '100%', height: '70px', marginTop: '8px', borderRadius: '8px', border: '1.5px solid #e0e0e0', padding: '8px 10px', fontSize: '13px', fontFamily: 'inherit', resize: 'vertical' }} />
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                        <button onClick={() => guardarEdicion(r.id)} style={{ padding: '6px 14px', fontSize: '12px', margin: 0 }}>Guardar</button>
+                        <button onClick={() => setEditandoResenia(null)} style={{ padding: '6px 14px', fontSize: '12px', background: '#eee', color: '#333', margin: 0 }}>Cancelar</button>
+                      </div>
+                    </div>
+                  ) : (
+                    r.comentario && <p style={{ margin: '6px 0 0', fontSize: '14px', color: '#444', lineHeight: '1.6' }}>{r.comentario}</p>
+                  )}
                 </div>
               </div>
-              {r.comentario && (
-                <p style={{ margin: 0, fontSize: '14px', color: '#444', lineHeight: '1.6', paddingLeft: '46px' }}>{r.comentario}</p>
-              )}
             </div>
           ))}
         </div>
