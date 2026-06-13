@@ -57,19 +57,24 @@ function Chat() {
     inputRef.current?.focus()
   }
 
+  function parseTS(ts) {
+    const s = ts && !ts.endsWith("Z") ? ts + "Z" : ts
+    return new Date(s)
+  }
+
   function formatHora(timestamp) {
-    return new Date(timestamp).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+    return parseTS(timestamp).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
   }
 
   function formatFecha(timestamp) {
-    return new Date(timestamp).toLocaleDateString('es-AR', { day: '2-digit', month: 'long' })
+    return parseTS(timestamp).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', timeZone: 'America/Argentina/Buenos_Aires' })
   }
 
   // Agrupar mensajes por fecha
   const mensajesConFecha = []
   let fechaActual = null
   for (const m of mensajes) {
-    const fecha = new Date(m.created_at).toDateString()
+    const fecha = parseTS(m.created_at).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })
     if (fecha !== fechaActual) {
       mensajesConFecha.push({ tipo: 'fecha', fecha: m.created_at, key: `fecha-${m.created_at}` })
       fechaActual = fecha
