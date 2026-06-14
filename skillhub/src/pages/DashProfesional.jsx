@@ -111,8 +111,15 @@ function DashProfesional() {
   }
 
   async function guardarPerfil() {
-    await supabase.from('perfiles').update(perfil).eq('id', userId)
-    await supabase.from('profesionales').update(prof).eq('id', userId)
+    const { error: errorPerfil } = await supabase.from('perfiles').update(perfil).eq('id', userId)
+    if (errorPerfil) { setMensaje('❌ Error guardando datos personales: ' + errorPerfil.message); return }
+
+    // Usamos upsert: si la fila en profesionales no existe por un bug en el registro, la crea automaticamente
+    const { error: errorProf } = await supabase
+      .from('profesionales')
+      .upsert({ ...prof, id: userId }, { onConflict: 'id' })
+    if (errorProf) { setMensaje('❌ Error guardando perfil profesional: ' + errorProf.message); return }
+
     setMensaje('✅ Perfil guardado correctamente')
   }
 
