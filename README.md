@@ -92,7 +92,16 @@ create table perfiles (
 -- Tabla de profesionales
 create table profesionales (
   id uuid primary key references perfiles(id),
-  rubro text,
+  rubro text check (rubro in (
+    'albanil','electricista','plomero_gasista','carpintero','pintor',
+    'herrero','soldador','techista','cerrajero','mecanico_automotor',
+    'gomeria','chapista_pintor','refrigeracion_ac','camaras_seguridad',
+    'redes_fibra','jardinero','fumigador','yesero','ceramicos','vidriero',
+    'tapicero','costurero','peluquero','estetica','cocinero','panadero',
+    'pastelero','carpintero_metalico','tornero','electricista_industrial',
+    'maquinaria_pesada','tecnico_computacion','reparador_celulares',
+    'fotografo','herrero_artesanal','constructor'
+  )),
   descripcion text,
   disponible boolean default true
 );
@@ -145,11 +154,15 @@ skillhub/
 │   ├── pages/
 │   │   ├── Login.jsx
 │   │   ├── Registro.jsx
+│   │   ├── Explorar.jsx
 │   │   ├── DashBuscador.jsx
 │   │   ├── DashProfesional.jsx
 │   │   └── PerfilProfesional.jsx
+│   ├── components/
+│   │   └── Navbar.jsx
 │   ├── services/
-│   │   └── supabase.js
+│   │   ├── supabase.js
+│   │   └── rubros.js
 │   ├── App.jsx
 │   ├── index.css
 │   └── main.jsx
@@ -173,9 +186,11 @@ skillhub/
 - ✅ Promedio de estrellas visible en la lista de resultados
 - ✅ Diseño responsive (celular, tablet y escritorio)
 - ✅ Deploy en producción con Vercel
+- ✅ +35 rubros disponibles para profesionales
 
 ---
 
-## Autor
+## Bugs resueltos durante el desarrollo
 
-**Rodrigo Cruz** — Proyecto final Desarrollo de Software — Junio 2026
+- El constraint `profesionales_rubro_check` se actualiza con todos los rubros disponibles. Si agregás rubros nuevos en `rubros.js`, recordá actualizar el constraint en Supabase con un `ALTER TABLE`.
+- El insert en `profesionales` al registrarse usa `upsert` en el dashboard para cubrir el caso en que Supabase tenga confirmación de email activa y la fila no se haya creado en el registro.
