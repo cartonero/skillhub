@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { supabase } from '../services/supabase'
 import { useEffect, useState, useRef } from 'react'
 
@@ -73,14 +73,34 @@ function NavbarContenido() {
   const toggleChat = () => { setDropdownNotif(false); setDropdownChat(prev => !prev) }
   const formatFecha = (ts) => ts ? new Date(ts).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : ''
 
+  const enExplorar = location.pathname === '/explorar'
+
   return (
-    <nav style={{ backgroundColor: '#1a1a2e', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(0,0,0,0.2)', position: 'sticky', top: 0, zIndex: 1000 }}>
+    <nav style={{ backgroundColor: '#1a1a2e', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(0,0,0,0.2)', position: 'sticky', top: 0, zIndex: 1000, flexWrap: 'wrap', gap: '10px' }}>
       <div onClick={() => navigate(-1)} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
         <div style={{ backgroundColor: '#f4a261', borderRadius: '8px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '18px', color: 'white' }}>S</div>
         <span style={{ color: 'white', fontSize: '20px', fontWeight: 'bold' }}>SkillHub</span>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+
+        {/* Botón Explorar profesionales - solo para profesionales */}
+        {rol === 'profesional' && (
+          <Link
+            to="/explorar"
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              background: enExplorar ? '#f4a261' : 'rgba(255,255,255,0.08)',
+              color: enExplorar ? 'white' : '#f4a261',
+              border: '1px solid #f4a261',
+              padding: '6px 14px', borderRadius: '8px',
+              fontSize: '13px', fontWeight: '500',
+              textDecoration: 'none', transition: 'background 0.2s, color 0.2s',
+            }}
+          >
+            🔍 Explorar profesionales
+          </Link>
+        )}
 
         {/* Avatar + nombre */}
         {nombreUsuario && (
