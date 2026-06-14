@@ -84,10 +84,10 @@ function NavbarContenido() {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
 
-        {/* Botón Explorar profesionales - solo para profesionales */}
+        {/* Botón Explorar profesionales / Mi perfil - solo para profesionales */}
         {rol === 'profesional' && (
           <Link
-            to="/explorar"
+            to={enExplorar ? '/dash-profesional' : '/explorar'}
             style={{
               display: 'flex', alignItems: 'center', gap: '6px',
               background: enExplorar ? '#f4a261' : 'rgba(255,255,255,0.08)',
@@ -98,7 +98,7 @@ function NavbarContenido() {
               textDecoration: 'none', transition: 'background 0.2s, color 0.2s',
             }}
           >
-            🔍 Explorar profesionales
+            {enExplorar ? '← Mi perfil' : '🔍 Explorar profesionales'}
           </Link>
         )}
 
