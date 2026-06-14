@@ -17,13 +17,23 @@ function Registro() {
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) { setError(error.message); return }
 
+    // Si Supabase tiene confirmación de email activada, data.user puede ser null hasta que el usuario confirme.
+    // En ese caso mostramos un mensaje claro en vez de fallar silenciosamente.
+    if (!data.user) {
+      setError('Te enviamos un email de confirmación. Por favor confirmá tu cuenta antes de iniciar sesión.')
+      return
+    }
+
     const { error: errorPerfil } = await supabase
       .from('perfiles')
       .insert({ id: data.user.id, tipo: rol, nombre: `${nombre.trim()} ${apellido.trim()}` })
     if (errorPerfil) { setError(errorPerfil.message); return }
 
     if (rol === 'profesional') {
-      await supabase.from('profesionales').insert({ id: data.user.id, rubro: 'albanil' })
+      const { error: errorProf } = await supabase
+        .from('profesionales')
+        .insert({ id: data.user.id, rubro: 'albanil', disponible: true })
+      if (errorProf) { setError('Error creando perfil profesional: ' + errorProf.message); return }
     }
 
     navigate('/login')
