@@ -1,14 +1,7 @@
+import { getRubroColor, getRubroLabel } from '../services/rubros'
 import { useState, useEffect } from 'react'
 import { supabase } from '../services/supabase'
 import { useParams, useNavigate } from 'react-router-dom'
-
-const rubroColores = {
-  plomero: { bg: '#e8f4fd', color: '#1a6fa8' },
-  electricista: { bg: '#fef9e7', color: '#b7950b' },
-  gasista: { bg: '#fdebd0', color: '#ca6f1e' },
-  constructor: { bg: '#eafaf1', color: '#1e8449' },
-  mecanico: { bg: '#f4ecf7', color: '#7d3c98' },
-}
 
 function Estrellas({ valor, onChange }) {
   const [hover, setHover] = useState(0)
@@ -187,7 +180,7 @@ function PerfilProfesional() {
 
   if (!perfil || !prof) return <p style={{ textAlign: 'center', marginTop: '40px' }}>Cargando...</p>
 
-  const colorRubro = rubroColores[prof.rubro] || { bg: '#f0f0f0', color: '#555' }
+  const colorRubro = getRubroColor(prof.rubro)
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '30px 20px' }}>
