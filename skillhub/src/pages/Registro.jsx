@@ -1,3 +1,4 @@
+import { RUBROS } from '../services/rubros'
 import { useState } from 'react'
 import { supabase } from '../services/supabase'
 import { useNavigate } from 'react-router-dom'
@@ -22,10 +23,17 @@ function Registro() {
     if (errorPerfil) { setError(errorPerfil.message); return }
 
     if (rol === 'profesional') {
-      await supabase.from('profesionales').insert({ id: data.user.id, rubro: 'plomero' })
+      const { error: errProf } = await supabase.from('profesionales').insert({
+        id: data.user.id,
+        rubro: 'albanil',
+        descripcion: '',
+        disponible: true
+      })
+      if (errProf) { setError('Error creando perfil profesional: ' + errProf.message); return }
     }
 
-    navigate('/login')
+    if (rol === 'profesional') navigate('/dash-profesional')
+    else navigate('/dash-buscador')
   }
 
   return (
