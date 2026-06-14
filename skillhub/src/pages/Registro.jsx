@@ -23,7 +23,13 @@ function Registro() {
     if (errorPerfil) { setError(errorPerfil.message); return }
 
     if (rol === 'profesional') {
-      await supabase.from('profesionales').insert({ id: data.user.id, rubro: 'albanil' })
+      const { error: errProf } = await supabase.from('profesionales').insert({
+        id: data.user.id,
+        rubro: 'albanil',
+        descripcion: '',
+        disponible: true
+      })
+      if (errProf) { setError('Error creando perfil profesional: ' + errProf.message); return }
     }
 
     navigate('/login')

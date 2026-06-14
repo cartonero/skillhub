@@ -1,318 +1,316 @@
-import { RUBROS, getRubroLabel, getRubroColor } from '../services/rubros'
+import { RUBROS } from '../services/rubros'
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../services/supabase'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
-function DashBuscador() {
-  const [profesionales, setProfesionales] = useState([])
-  const [rubro, setRubro] = useState('')
-  const [localidad, setLocalidad] = useState('')
+function DashProfesional() {
+  const [perfil, setPerfil] = useState({ nombre: '', telefono: '', localidad: '', provincia: '', foto_perfil: '' })
+  const [prof, setProf] = useState({ rubro: 'albanil', descripcion: '', disponible: true })
   const [userId, setUserId] = useState(null)
-  const [favoritos, setFavoritos] = useState([])
-  const [vistaFavoritos, setVistaFavoritos] = useState(false)
-  const [nombreUsuario, setNombreUsuario] = useState('')
-  const [perfil, setPerfil] = useState({ nombre: '', foto_perfil: '' })
-  const [vistaConfig, setVistaConfig] = useState(false)
-  const [editNombre, setEditNombre] = useState('')
-  const [mensajeConfig, setMensajeConfig] = useState('')
+  const [mensaje, setMensaje] = useState('')
+  const [notificaciones, setNotificaciones] = useState([])
+  const [confirmarBorrar, setConfirmarBorrar] = useState(false)
+  const [portafolios, setPortafolios] = useState([])
+  const [nuevoPortTitulo, setNuevoPortTitulo] = useState('')
+  const [nuevoPortDesc, setNuevoPortDesc] = useState('')
+  const [editandoPort, setEditandoPort] = useState(null)
+  const [descFotos, setDescFotos] = useState({})
   const avatarRef = useRef(null)
+  const fotoRefs = useRef({})
+  const navigate = useNavigate()
+  const userIdRef = useRef(null)
 
   useEffect(() => {
-    async function init() {
+    async function cargarDatos() {
       const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        setUserId(user.id)
-        cargarFavoritos(user.id)
-        const { data: perfilData } = await supabase.from('perfiles').select('nombre, foto_perfil').eq('id', user.id).single()
-        if (perfilData) {
-          setPerfil(perfilData)
-          setEditNombre(perfilData.nombre || '')
-          if (perfilData?.nombre) setNombreUsuario(perfilData.nombre.split(' ')[0])
-        }
-      }
-      buscar()
+      setUserId(user.id)
+      userIdRef.current = user.id
+      const { data: perfilData } = await supabase.from('perfiles').select('*').eq('id', user.id).single()
+      if (perfilData) setPerfil(perfilData)
+      const { data: profData } = await supabase.from('profesionales').select('*').eq('id', user.id).single()
+      if (profData) setProf(profData)
+      cargarNotificaciones(user.id)
+      cargarPortafolios(user.id)
     }
-    init()
+    cargarDatos()
   }, [])
 
-  async function cargarFavoritos(uid) {
-    const { data } = await supabase.from('favoritos').select('profesional_id').eq('buscador_id', uid)
-    if (data) setFavoritos(data.map(f => f.profesional_id))
+  async function cargarNotificaciones(uid) {
+    const { data } = await supabase.from('notificaciones').select('*').eq('usuario_id', uid).order('created_at', { ascending: false })
+    if (data) setNotificaciones(data)
+    const tieneSinLeer = data?.some(n => !n.leida)
+    await supabase.from('notificaciones').update({ leida: true }).eq('usuario_id', uid).eq('leida', false)
+    if (tieneSinLeer) window.location.reload()
   }
 
-  async function toggleFavorito(profesionalId) {
-    if (!userId) return
-    const esFavorito = favoritos.includes(profesionalId)
-    if (esFavorito) {
-      await supabase.from('favoritos').delete().eq('buscador_id', userId).eq('profesional_id', profesionalId)
-      setFavoritos(favoritos.filter(id => id !== profesionalId))
-    } else {
-      await supabase.from('favoritos').insert({ buscador_id: userId, profesional_id: profesionalId })
-      setFavoritos([...favoritos, profesionalId])
-    }
+  async function cargarPortafolios(uid) {
+    const { data: ports } = await supabase.from('portafolios').select('*').eq('profesional_id', uid).order('created_at')
+    if (!ports) return
+    const portsConImagenes = await Promise.all(ports.map(async (p) => {
+      const { data: imgs } = await supabase.from('trabajos').select('*').eq('portafolio_id', p.id)
+      return { ...p, imagenes: imgs || [] }
+    }))
+    setPortafolios(portsConImagenes)
   }
 
-  async function buscar() {
-    let query = supabase.from('profesionales').select(`
-      id, rubro, descripcion, disponible,
-      perfiles (nombre, telefono, localidad, provincia, foto_perfil),
-      resenias (estrellas)
-    `)
-    if (rubro) query = query.eq('rubro', rubro)
-    const { data, error } = await query
-    if (error) console.error(error)
-    if (data) {
-      let resultado = data
-      if (localidad) {
-        resultado = data.filter(p => p.perfiles?.localidad?.toLowerCase().includes(localidad.toLowerCase()))
-      }
-      setProfesionales(resultado)
-    }
+  async function crearPortafolio() {
+    const uid = userIdRef.current
+    if (!nuevoPortTitulo.trim() || !uid) return
+    const { error } = await supabase.from('portafolios').insert({ profesional_id: uid, titulo: nuevoPortTitulo.trim(), descripcion: nuevoPortDesc.trim() })
+    if (error) { setMensaje('❌ Error creando portafolio: ' + error.message); return }
+    setNuevoPortTitulo('')
+    setNuevoPortDesc('')
+    cargarPortafolios(uid)
+  }
+
+  async function guardarEdicionPort(port) {
+    await supabase.from('portafolios').update({ titulo: editandoPort.titulo, descripcion: editandoPort.descripcion }).eq('id', port.id)
+    setEditandoPort(null)
+    cargarPortafolios(userId)
+  }
+
+  async function eliminarPortafolio(portId) {
+    if (!window.confirm('¿Eliminar este portafolio y todas sus imágenes?')) return
+    await supabase.from('trabajos').delete().eq('portafolio_id', portId)
+    await supabase.from('portafolios').delete().eq('id', portId)
+    cargarPortafolios(userId)
+  }
+
+  async function subirFotoAPort(portId) {
+    const uid = userIdRef.current
+    const ref = fotoRefs.current[portId]
+    if (!ref?.files[0] || !uid) return
+    const archivo = ref.files[0]
+    const nombreArchivo = `${uid}/${Date.now()}_${archivo.name}`
+    const { error } = await supabase.storage.from('trabajos').upload(nombreArchivo, archivo)
+    if (error) { setMensaje('❌ Error subiendo la foto'); return }
+    const { data: urlData } = supabase.storage.from('trabajos').getPublicUrl(nombreArchivo)
+    await supabase.from('trabajos').insert({
+      profesional_id: uid,
+      portafolio_id: portId,
+      foto_url: urlData.publicUrl,
+      descripcion: descFotos[portId] || ''
+    })
+    setDescFotos({ ...descFotos, [portId]: '' })
+    ref.value = ''
+    cargarPortafolios(uid)
+  }
+
+  async function eliminarImagen(imgId, portId) {
+    if (!window.confirm('¿Eliminar esta imagen?')) return
+    await supabase.from('trabajos').delete().eq('id', imgId)
+    cargarPortafolios(portId ? userId : userId)
+  }
+
+  async function subirAvatar() {
+    const archivo = avatarRef.current.files[0]
+    if (!archivo) return
+    const nombreArchivo = `${userId}/avatar_${Date.now()}.${archivo.name.split('.').pop()}`
+    const { error } = await supabase.storage.from('avatares').upload(nombreArchivo, archivo)
+    if (error) { setMensaje('❌ Error subiendo la foto de perfil'); return }
+    const { data: urlData } = supabase.storage.from('avatares').getPublicUrl(nombreArchivo)
+    await supabase.from('perfiles').update({ foto_perfil: urlData.publicUrl }).eq('id', userId)
+    setPerfil({ ...perfil, foto_perfil: urlData.publicUrl })
+    setMensaje('✅ Foto de perfil actualizada')
+    avatarRef.current.value = ''
   }
 
   async function guardarPerfil() {
-    if (!editNombre.trim()) { setMensajeConfig('❌ El nombre no puede estar vacío'); return }
-    await supabase.from('perfiles').update({ nombre: editNombre.trim() }).eq('id', userId)
-    setPerfil(prev => ({ ...prev, nombre: editNombre.trim() }))
-    setNombreUsuario(editNombre.trim().split(' ')[0])
-    setMensajeConfig('✅ Nombre actualizado correctamente')
-    setTimeout(() => setMensajeConfig(''), 3000)
+    await supabase.from('perfiles').update(perfil).eq('id', userId)
+    await supabase.from('profesionales').update(prof).eq('id', userId)
+    setMensaje('✅ Perfil guardado correctamente')
   }
 
-  async function subirFoto() {
-    const archivo = avatarRef.current?.files[0]
-    if (!archivo) { setMensajeConfig('❌ Seleccioná una imagen primero'); return }
-    const ext = archivo.name.split('.').pop()
-    const nombreArchivo = `${userId}/avatar_${Date.now()}.${ext}`
-    const { error } = await supabase.storage.from('avatares').upload(nombreArchivo, archivo)
-    if (error) { setMensajeConfig('❌ Error subiendo la foto'); return }
-    const { data: urlData } = supabase.storage.from('avatares').getPublicUrl(nombreArchivo)
-    await supabase.from('perfiles').update({ foto_perfil: urlData.publicUrl }).eq('id', userId)
-    setPerfil(prev => ({ ...prev, foto_perfil: urlData.publicUrl }))
-    avatarRef.current.value = ''
-    setMensajeConfig('✅ Foto de perfil actualizada')
-    setTimeout(() => setMensajeConfig(''), 3000)
+  async function borrarCuenta() {
+    await supabase.from('resenias').delete().eq('profesional_id', userId)
+    await supabase.from('trabajos').delete().eq('profesional_id', userId)
+    await supabase.from('portafolios').delete().eq('profesional_id', userId)
+    await supabase.from('mensajes').delete().or(`de_id.eq.${userId},para_id.eq.${userId}`)
+    await supabase.from('notificaciones').delete().eq('usuario_id', userId)
+    await supabase.from('favoritos').delete().eq('profesional_id', userId)
+    await supabase.from('profesionales').delete().eq('id', userId)
+    await supabase.from('perfiles').delete().eq('id', userId)
+    await supabase.auth.signOut()
+    navigate('/login')
   }
 
-  function calcularPromedio(resenias) {
-    if (!resenias || resenias.length === 0) return null
-    const suma = resenias.reduce((acc, r) => acc + r.estrellas, 0)
-    return (suma / resenias.length).toFixed(1)
+  function formatFecha(timestamp) {
+    return new Date(timestamp).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' })
   }
-
-
-
-  const listaMostrada = vistaFavoritos
-    ? profesionales.filter(p => favoritos.includes(p.id))
-    : profesionales
 
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '30px 20px' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '30px 20px' }}>
 
-      {/* Banner bienvenida */}
-      {nombreUsuario && (
-        <div style={{
-          background: 'linear-gradient(135deg, #1a1a2e, #0f3460)',
-          borderRadius: '16px', padding: '24px 28px', marginBottom: '24px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
+      {perfil.nombre && (
+        <div style={{ background: 'linear-gradient(135deg, #1a1a2e, #0f3460)', borderRadius: '16px', padding: '24px 28px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <h2 style={{ color: 'white', margin: '0 0 4px', fontSize: '22px' }}>
-              ¡Bienvenido, {nombreUsuario}! 👋
-            </h2>
-            <p style={{ color: '#aab', margin: 0, fontSize: '14px' }}>
-              Encontrá el profesional que necesitás
-            </p>
+            <h2 style={{ color: 'white', margin: '0 0 4px', fontSize: '22px' }}>¡Hola, {perfil.nombre.split(' ')[0]}! 👋</h2>
+            <p style={{ color: '#aab', margin: 0, fontSize: '14px' }}>Administrá tu perfil y tus servicios</p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button
-              onClick={() => { setVistaConfig(!vistaConfig); setVistaFavoritos(false) }}
-              title="Mi perfil"
-              style={{
-                background: vistaConfig ? '#f4a261' : 'rgba(255,255,255,0.12)',
-                border: 'none', borderRadius: '50%', width: '44px', height: '44px',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '20px', transition: 'background 0.2s',
-              }}
-            >
-              {perfil.foto_perfil
-                ? <img src={perfil.foto_perfil} alt="perfil"
-                    style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #f4a261' }} />
-                : '⚙️'
-              }
-            </button>
-            <div style={{ fontSize: '48px' }}>🔧</div>
-          </div>
+          <div style={{ fontSize: '48px' }}>🛠️</div>
         </div>
       )}
 
-      {/* Sección de configuración */}
-      {vistaConfig && (
-        <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '28px', marginBottom: '24px' }}>
-          <h3 style={{ margin: '0 0 20px', color: '#1a1a2e' }}>⚙️ Mi perfil</h3>
-
-          {/* Foto de perfil */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '24px', flexWrap: 'wrap' }}>
-            {perfil.foto_perfil
-              ? <img src={perfil.foto_perfil} alt="perfil"
-                  style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #f4a261' }} />
-              : <div style={{
-                  width: '80px', height: '80px', borderRadius: '50%',
-                  background: '#f4a261', color: 'white',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '28px', fontWeight: '600', flexShrink: 0,
-                }}>
-                  {(perfil.nombre || 'U')[0].toUpperCase()}
-                </div>
-            }
-            <div style={{ flex: 1 }}>
-              <label style={{ fontSize: '13px', fontWeight: '500', color: '#555', display: 'block', marginBottom: '6px' }}>
-                Foto de perfil
-              </label>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                <input type="file" accept="image/*" ref={avatarRef}
-                  style={{ fontSize: '12px', maxWidth: '200px', margin: 0 }} />
-                <button onClick={subirFoto}
-                  style={{ padding: '7px 14px', fontSize: '13px', margin: 0 }}>
-                  Subir foto
-                </button>
-              </div>
-            </div>
+      {/* Foto de perfil */}
+      <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '30px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '24px' }}>
+        <img src={perfil.foto_perfil || 'https://via.placeholder.com/100x100?text=Foto'} alt="Foto de perfil"
+          style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #f4a261' }} />
+        <div style={{ flex: 1 }}>
+          <h2 style={{ marginBottom: '4px' }}>{perfil.nombre || 'Tu nombre'}</h2>
+          <p style={{ color: '#666', marginBottom: '12px' }}>{prof.rubro} — {perfil.localidad}, {perfil.provincia}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <input type="file" accept="image/*" ref={avatarRef} style={{ fontSize: '12px', maxWidth: '200px' }} />
+            <button onClick={subirAvatar} style={{ padding: '6px 12px', fontSize: '12px' }}>Cambiar foto</button>
           </div>
-
-          {/* Nombre */}
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ fontSize: '13px', fontWeight: '500', color: '#555', display: 'block', marginBottom: '6px' }}>
-              Nombre completo
-            </label>
-            <input
-              placeholder="Tu nombre y apellido"
-              value={editNombre}
-              onChange={(e) => setEditNombre(e.target.value)}
-              style={{ maxWidth: '360px' }}
-            />
-          </div>
-
-          <button onClick={guardarPerfil} style={{ padding: '9px 20px', fontSize: '14px', margin: 0 }}>
-            Guardar cambios
-          </button>
-          {mensajeConfig && (
-            <span style={{
-              marginLeft: '12px', fontSize: '13px', fontWeight: '500',
-              color: mensajeConfig.includes('✅') ? '#1e8449' : '#c0392b',
-            }}>
-              {mensajeConfig}
-            </span>
-          )}
         </div>
-      )}
-
-      {/* Encabezado buscador / favoritos */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h2 style={{ margin: 0 }}>{vistaFavoritos ? '❤️ Mis favoritos' : '🔍 Buscar profesionales'}</h2>
-        <button
-          onClick={() => { setVistaFavoritos(!vistaFavoritos); setVistaConfig(false) }}
-          style={{
-            background: vistaFavoritos ? '#f4a261' : 'white',
-            color: vistaFavoritos ? 'white' : '#f4a261',
-            border: '1px solid #f4a261', padding: '8px 16px',
-            borderRadius: '8px', cursor: 'pointer', fontSize: '14px',
-          }}
-        >
-          {vistaFavoritos ? '← Ver todos' : '❤️ Mis favoritos'}
-        </button>
       </div>
 
-      {/* Filtros */}
-      {!vistaFavoritos && (
-        <div style={{ background: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', marginBottom: '24px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <select value={rubro} onChange={(e) => setRubro(e.target.value)} style={{ flex: 1 }}>
-            <option value="">Todos los rubros</option>
-            {RUBROS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-          </select>
-          <input placeholder="Localidad" value={localidad}
-            onChange={(e) => setLocalidad(e.target.value)} style={{ flex: 1 }} />
-          <button onClick={buscar}>Buscar</button>
+      {/* Notificaciones */}
+      {notificaciones.length > 0 && (
+        <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px', marginBottom: '24px' }}>
+          <h3 style={{ marginBottom: '16px' }}>🔔 Notificaciones</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {notificaciones.map((n) => (
+              <div key={n.id} style={{ padding: '12px 16px', borderRadius: '10px', background: n.leida ? '#f8f8f8' : '#fff3e8', border: n.leida ? '1px solid #eee' : '1px solid #f4a261', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '14px', color: '#333' }}>{n.mensaje}</span>
+                <span style={{ fontSize: '11px', color: '#999', marginLeft: '12px', whiteSpace: 'nowrap' }}>{formatFecha(n.created_at)}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Lista de profesionales */}
-      <div>
-        {listaMostrada.length === 0 && (
-          <p style={{ textAlign: 'center', color: '#666' }}>
-            {vistaFavoritos ? 'No tenés favoritos guardados aún.' : 'No se encontraron profesionales.'}
-          </p>
+      {/* Datos personales */}
+      <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px', marginBottom: '24px' }}>
+        <h3 style={{ marginBottom: '16px' }}>Datos personales</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <input placeholder="Nombre completo" value={perfil.nombre} onChange={(e) => setPerfil({ ...perfil, nombre: e.target.value })} />
+          <input placeholder="Teléfono / WhatsApp" value={perfil.telefono || ''} onChange={(e) => setPerfil({ ...perfil, telefono: e.target.value })} />
+          <input placeholder="Localidad" value={perfil.localidad || ''} onChange={(e) => setPerfil({ ...perfil, localidad: e.target.value })} />
+          <input placeholder="Provincia" value={perfil.provincia || ''} onChange={(e) => setPerfil({ ...perfil, provincia: e.target.value })} />
+        </div>
+        <h3 style={{ margin: '16px 0' }}>Datos profesionales</h3>
+        <select value={prof.rubro} onChange={(e) => setProf({ ...prof, rubro: e.target.value })}>
+          {RUBROS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+        </select>
+        <textarea placeholder="Describí tu experiencia y servicios" value={prof.descripcion || ''}
+          onChange={(e) => setProf({ ...prof, descripcion: e.target.value })}
+          style={{ width: '100%', maxWidth: '100%', height: '100px', marginTop: '10px' }} />
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' }}>
+          <input type="checkbox" checked={prof.disponible} onChange={(e) => setProf({ ...prof, disponible: e.target.checked })} />
+          Disponible para trabajos
+        </label>
+        <br />
+        <button onClick={guardarPerfil}>Guardar perfil</button>
+        {mensaje && <p style={{ marginTop: '10px' }}>{mensaje}</p>}
+      </div>
+
+      {/* Gestión de portafolios */}
+      <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px', marginBottom: '24px' }}>
+        <h3 style={{ marginBottom: '16px' }}>📸 Mis portafolios</h3>
+
+        {/* Crear nuevo portafolio */}
+        <div style={{ background: '#f8f8f8', borderRadius: '12px', padding: '16px', marginBottom: '20px', border: '1px dashed #ddd' }}>
+          <p style={{ fontSize: '13px', fontWeight: '500', color: '#555', marginBottom: '10px' }}>+ Crear nuevo portafolio</p>
+          <input placeholder="Título del portafolio (ej: Instalaciones eléctricas)"
+            value={nuevoPortTitulo} onChange={(e) => setNuevoPortTitulo(e.target.value)}
+            style={{ marginBottom: '6px' }} />
+          <input placeholder="Descripción opcional"
+            value={nuevoPortDesc} onChange={(e) => setNuevoPortDesc(e.target.value)}
+            style={{ marginBottom: '10px' }} />
+          <button onClick={crearPortafolio} style={{ padding: '8px 16px', fontSize: '13px' }}>Crear portafolio</button>
+        </div>
+
+        {portafolios.length === 0 && (
+          <p style={{ color: '#999', fontSize: '13px' }}>No tenés portafolios aún. Creá uno arriba.</p>
         )}
-        {listaMostrada.map((p) => {
-          const promedio = calcularPromedio(p.resenias)
-          const esFavorito = favoritos.includes(p.id)
-          const colorRubro = getRubroColor(p.rubro)
-          const descripcionCorta = p.descripcion && p.descripcion.length > 100
-            ? p.descripcion.substring(0, 100) + '...'
-            : p.descripcion || 'Sin descripción'
 
-          return (
-            <div key={p.id} style={{
-              background: 'white', borderRadius: '12px',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '20px',
-              marginBottom: '16px', transition: 'box-shadow 0.2s',
-            }}
-              onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.14)'}
-              onMouseLeave={e => e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)'}
-            >
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-                <img
-                  src={p.perfiles?.foto_perfil || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.perfiles?.nombre || 'P')}&background=f4a261&color=fff&size=80`}
-                  alt={p.perfiles?.nombre}
-                  style={{ width: '72px', height: '72px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #f4a261', flexShrink: 0 }}
-                />
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <h3 style={{ marginBottom: '6px' }}>{p.perfiles?.nombre || 'Sin nombre'}</h3>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
-                        <span style={{
-                          background: colorRubro.bg, color: colorRubro.color,
-                          padding: '2px 10px', borderRadius: '999px', fontSize: '12px',
-                          fontWeight: '500', textTransform: 'capitalize',
-                        }}>{p.rubro}</span>
-                        <span style={{ color: '#888', fontSize: '13px' }}>📍 {p.perfiles?.localidad || 'No especificada'}, {p.perfiles?.provincia || ''}</span>
-                      </div>
-                      <p style={{ color: '#555', fontSize: '14px', marginBottom: '6px' }}>{descripcionCorta}</p>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '13px' }}>{p.disponible ? '✅ Disponible' : '❌ No disponible'}</span>
-                        {promedio
-                          ? <span style={{ fontSize: '13px' }}>⭐ <strong>{promedio}</strong> / 5 ({p.resenias.length} reseñas)</span>
-                          : <span style={{ fontSize: '13px', color: '#999' }}>⭐ Sin reseñas aún</span>
-                        }
-                      </div>
-                    </div>
-                    <button onClick={() => toggleFavorito(p.id)}
-                      style={{ background: 'transparent', border: 'none', fontSize: '22px', cursor: 'pointer', padding: '4px', flexShrink: 0 }}
-                      title={esFavorito ? 'Quitar de favoritos' : 'Agregar a favoritos'}>
-                      {esFavorito ? '❤️' : '🤍'}
-                    </button>
-                  </div>
+        {portafolios.map((port) => (
+          <div key={port.id} style={{ border: '1px solid #eee', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
+
+            {/* Header del portafolio */}
+            {editandoPort?.id === port.id ? (
+              <div style={{ marginBottom: '12px' }}>
+                <input value={editandoPort.titulo} onChange={(e) => setEditandoPort({ ...editandoPort, titulo: e.target.value })} style={{ marginBottom: '6px' }} />
+                <input value={editandoPort.descripcion || ''} placeholder="Descripción" onChange={(e) => setEditandoPort({ ...editandoPort, descripcion: e.target.value })} style={{ marginBottom: '10px' }} />
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={() => guardarEdicionPort(port)} style={{ padding: '6px 12px', fontSize: '12px' }}>Guardar</button>
+                  <button onClick={() => setEditandoPort(null)} style={{ padding: '6px 12px', fontSize: '12px', background: '#eee', color: '#333' }}>Cancelar</button>
                 </div>
               </div>
-              <div style={{ marginTop: '14px', display: 'flex', gap: '10px' }}>
-                {p.perfiles?.telefono && (
-                  <a href={`https://wa.me/${p.perfiles.telefono}`} target="_blank"
-                    style={{ background: '#25d366', color: 'white', padding: '8px 14px', borderRadius: '6px', fontSize: '14px' }}>
-                    📱 WhatsApp
-                  </a>
-                )}
-                <Link to={`/profesional/${p.id}`}
-                  style={{ background: '#f4a261', color: 'white', padding: '8px 14px', borderRadius: '6px', fontSize: '14px' }}>
-                  Ver perfil →
-                </Link>
+            ) : (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                <div>
+                  <h4 style={{ margin: '0 0 2px', color: '#1a1a2e' }}>{port.titulo}</h4>
+                  {port.descripcion && <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>{port.descripcion}</p>}
+                </div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button onClick={() => setEditandoPort({ id: port.id, titulo: port.titulo, descripcion: port.descripcion || '' })}
+                    style={{ padding: '4px 10px', fontSize: '12px', background: '#f0f0f0', color: '#333', margin: 0 }}>✏️</button>
+                  <button onClick={() => eliminarPortafolio(port.id)}
+                    style={{ padding: '4px 10px', fontSize: '12px', background: '#fde8e8', color: '#c0392b', margin: 0 }}>🗑️</button>
+                </div>
               </div>
+            )}
+
+            {/* Imágenes del portafolio */}
+            {port.imagenes.length > 0 && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px', marginBottom: '14px' }}>
+                {port.imagenes.map((img) => (
+                  <div key={img.id} style={{ borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.1)', position: 'relative' }}>
+                    <img src={img.foto_url} alt={img.descripcion} style={{ width: '100%', height: '100px', objectFit: 'cover', display: 'block' }} />
+                    <button
+                      onClick={() => eliminarImagen(img.id)}
+                      style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: '22px', height: '22px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: 0, padding: 0 }}
+                    >✕</button>
+                    {img.descripcion && <p style={{ padding: '4px 6px', fontSize: '11px', color: '#555', margin: 0 }}>{img.descripcion}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Subir foto al portafolio */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', background: '#fafafa', padding: '10px', borderRadius: '8px' }}>
+              <input type="file" accept="image/*"
+                ref={el => fotoRefs.current[port.id] = el}
+                style={{ fontSize: '12px', maxWidth: '180px', margin: 0 }} />
+              <input placeholder="Descripción (opcional)"
+                value={descFotos[port.id] || ''}
+                onChange={(e) => setDescFotos({ ...descFotos, [port.id]: e.target.value })}
+                style={{ flex: 1, fontSize: '12px', margin: 0 }} />
+              <button onClick={() => subirFotoAPort(port.id)}
+                style={{ padding: '6px 12px', fontSize: '12px', margin: 0 }}>
+                + Agregar foto
+              </button>
             </div>
-          )
-        })}
+          </div>
+        ))}
       </div>
+
+      {/* Zona de peligro */}
+      <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px', border: '1px solid #fde8e8' }}>
+        <h3 style={{ marginBottom: '8px', color: '#c0392b' }}>⚠️ Zona de peligro</h3>
+        <p style={{ color: '#666', fontSize: '14px', marginBottom: '16px' }}>
+          Al borrar tu cuenta se eliminarán todos tus datos: perfil, trabajos, reseñas y mensajes. Esta acción no se puede deshacer.
+        </p>
+        {!confirmarBorrar ? (
+          <button onClick={() => setConfirmarBorrar(true)}
+            style={{ background: 'transparent', border: '1px solid #e74c3c', color: '#e74c3c', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}>
+            🗑️ Borrar mi cuenta
+          </button>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <p style={{ color: '#e74c3c', fontWeight: '500' }}>¿Estás seguro? Esta acción es irreversible.</p>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={borrarCuenta} style={{ background: '#e74c3c', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}>Sí, borrar todo</button>
+              <button onClick={() => setConfirmarBorrar(false)} style={{ background: '#eee', color: '#333', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}>Cancelar</button>
+            </div>
+          </div>
+        )}
+      </div>
+
     </div>
   )
 }
 
-export default DashBuscador
+export default DashProfesional

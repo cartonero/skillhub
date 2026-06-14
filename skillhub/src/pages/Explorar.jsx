@@ -7,12 +7,16 @@ function Explorar() {
   const [profesionales, setProfesionales] = useState([])
   const [rubro, setRubro] = useState('')
   const [localidad, setLocalidad] = useState('')
+  const [cargando, setCargando] = useState(true)
+  const [errorMsg, setErrorMsg] = useState('')
 
   useEffect(() => {
     buscar()
   }, [])
 
   async function buscar() {
+    setCargando(true)
+    setErrorMsg('')
     let query = supabase.from('profesionales').select(`
       id, rubro, descripcion, disponible,
       perfiles (nombre, telefono, localidad, provincia, foto_perfil),
@@ -20,7 +24,8 @@ function Explorar() {
     `)
     if (rubro) query = query.eq('rubro', rubro)
     const { data, error } = await query
-    if (error) console.error(error)
+    setCargando(false)
+    if (error) { setErrorMsg('Error cargando profesionales: ' + error.message); return }
     if (data) {
       let resultado = data
       if (localidad) {
@@ -54,7 +59,9 @@ function Explorar() {
       </div>
 
       <div>
-        {profesionales.length === 0 && (
+        {cargando && <p style={{ textAlign: 'center', color: '#666' }}>Cargando profesionales...</p>}
+        {errorMsg && <p style={{ textAlign: 'center', color: '#c0392b' }}>{errorMsg}</p>}
+        {!cargando && !errorMsg && profesionales.length === 0 && (
           <p style={{ textAlign: 'center', color: '#666' }}>No se encontraron profesionales.</p>
         )}
         {profesionales.map((p) => {
