@@ -32,7 +32,8 @@ function Registro() {
       if (errProf) { setError('Error creando perfil profesional: ' + errProf.message); return }
     }
 
-    navigate('/login')
+    if (rol === 'profesional') navigate('/dash-profesional')
+    else navigate('/dash-buscador')
   }
 
   return (
