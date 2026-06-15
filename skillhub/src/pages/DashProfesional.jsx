@@ -154,15 +154,15 @@ function DashProfesional() {
       )}
 
       {/* Foto de perfil */}
-      <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '30px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '24px' }}>
+      <div className="dash-foto-card" style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '24px' }}>
         <img src={perfil.foto_perfil || 'https://via.placeholder.com/100x100?text=Foto'} alt="Foto de perfil"
           style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #f4a261' }} />
         <div style={{ flex: 1 }}>
           <h2 style={{ marginBottom: '4px' }}>{perfil.nombre || 'Tu nombre'}</h2>
           <p style={{ color: '#666', marginBottom: '12px' }}>{prof.rubro} — {perfil.localidad}, {perfil.provincia}</p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <input type="file" accept="image/*" ref={avatarRef} style={{ fontSize: '12px', maxWidth: '200px' }} />
-            <button onClick={subirAvatar} style={{ padding: '6px 12px', fontSize: '12px' }}>Cambiar foto</button>
+          <div className="dash-foto-botones" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <input type="file" accept="image/*" ref={avatarRef} style={{ fontSize: '12px', maxWidth: '160px', margin: 0 }} />
+            <button onClick={subirAvatar} style={{ padding: '6px 12px', fontSize: '12px', margin: 0, whiteSpace: 'nowrap' }}>Cambiar foto</button>
           </div>
         </div>
       </div>
@@ -198,8 +198,8 @@ function DashProfesional() {
         <textarea placeholder="Describí tu experiencia y servicios" value={prof.descripcion || ''}
           onChange={(e) => setProf({ ...prof, descripcion: e.target.value })}
           style={{ width: '100%', maxWidth: '100%', height: '100px', marginTop: '10px' }} />
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' }}>
-          <input type="checkbox" checked={prof.disponible} onChange={(e) => setProf({ ...prof, disponible: e.target.checked })} />
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px', width: '100%' }}>
+          <input type="checkbox" checked={prof.disponible} onChange={(e) => setProf({ ...prof, disponible: e.target.checked })} style={{ width: 'auto', maxWidth: 'auto', flex: 'none' }} />
           Disponible para trabajos
         </label>
         <br />

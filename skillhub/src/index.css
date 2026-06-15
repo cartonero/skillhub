@@ -185,3 +185,15 @@ hr {
     text-align: center;
   }
 }
+
+/* ===== DASH PROFESIONAL ===== */
+@media (max-width: 600px) {
+  .dash-foto-card {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+  .dash-foto-botones {
+    justify-content: center !important;
+  }
+}
