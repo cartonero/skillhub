@@ -267,20 +267,21 @@ function DashBuscador() {
               onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.14)'}
               onMouseLeave={e => e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)'}
             >
-              <div style={{ position: 'relative' }}>
-                <button onClick={() => toggleFavorito(p.id)}
-                  style={{ position: 'absolute', top: 0, right: 0, background: 'transparent', border: 'none', fontSize: '22px', cursor: 'pointer', padding: '4px' }}
-                  title={esFavorito ? 'Quitar de favoritos' : 'Agregar a favoritos'}>
-                  {esFavorito ? '❤️' : '🤍'}
-                </button>
-                <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start', paddingRight: '36px' }}>
+              <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
                   <img
                     src={p.perfiles?.foto_perfil || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.perfiles?.nombre || 'P')}&background=f4a261&color=fff&size=80`}
                     alt={p.perfiles?.nombre}
                     style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #f4a261', flexShrink: 0 }}
                   />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <h3 style={{ marginBottom: '6px' }}>{p.perfiles?.nombre || 'Sin nombre'}</h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <h3 style={{ marginBottom: '6px' }}>{p.perfiles?.nombre || 'Sin nombre'}</h3>
+                      <button onClick={() => toggleFavorito(p.id)}
+                        style={{ background: 'transparent', border: 'none', fontSize: '22px', cursor: 'pointer', padding: '0 0 0 8px', flexShrink: 0, lineHeight: 1 }}
+                        title={esFavorito ? 'Quitar de favoritos' : 'Agregar a favoritos'}>
+                        {esFavorito ? '❤️' : '🤍'}
+                      </button>
+                    </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
                       <span style={{
                         background: colorRubro.bg, color: colorRubro.color,
@@ -298,7 +299,6 @@ function DashBuscador() {
                       }
                     </div>
                   </div>
-                </div>
               </div>
               <div style={{ marginTop: '14px', display: 'flex', gap: '8px', flexDirection: isMobile ? 'column' : 'row' }}>
                 {p.perfiles?.telefono && (
