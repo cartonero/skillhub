@@ -55,7 +55,7 @@ function Carrusel({ imagenes, onImagenClick }) {
   for (let i = 0; i < Math.min(3, total); i++) visibles.push(imagenes[(indice + i) % total])
   return (
     <div style={{ position: 'relative' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(3, total)}, 1fr)`, gap: '12px' }}>
+      <div className="carrusel-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(3, total)}, 1fr)`, gap: '12px' }}>
         {visibles.map((img, i) => (
           <div key={img.id + '-' + i} onClick={() => onImagenClick(img)}
             style={{ borderRadius: '10px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer', transition: 'transform 0.2s' }}
@@ -191,7 +191,7 @@ function PerfilProfesional() {
       <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', overflow: 'hidden', marginBottom: '24px' }}>
         <div style={{ background: 'linear-gradient(135deg, #1a1a2e, #0f3460)', height: '80px' }} />
         <div style={{ padding: '0 30px 30px' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '20px', marginTop: '-40px', marginBottom: '16px' }}>
+          <div className="perfil-header-top" style={{ display: 'flex', alignItems: 'flex-end', gap: '20px', marginTop: '-40px', marginBottom: '16px' }}>
             <img src={perfil.foto_perfil || `https://ui-avatars.com/api/?name=${encodeURIComponent(perfil.nombre || 'P')}&background=f4a261&color=fff&size=120`}
               alt="Foto de perfil" style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '4px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.2)', flexShrink: 0 }} />
             <div style={{ paddingBottom: '4px' }}>
@@ -208,7 +208,7 @@ function PerfilProfesional() {
             {promedio ? <span style={{ fontSize: '14px' }}>⭐ <strong>{promedio}</strong> / 5 ({resenias.length} reseñas)</span>
               : <span style={{ fontSize: '14px', color: '#999' }}>⭐ Sin reseñas aún</span>}
           </div>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <div className="perfil-acciones" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             {perfil.telefono && <a href={`https://wa.me/${perfil.telefono}`} target="_blank" style={{ background: '#25d366', color: 'white', padding: '10px 18px', borderRadius: '8px', textDecoration: 'none', fontSize: '14px' }}>📱 WhatsApp</a>}
             {userId && userId !== id && <button onClick={() => navigate(`/chat/${id}`)} style={{ background: '#1a1a2e', color: 'white', padding: '10px 18px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '14px' }}>💬 Enviar mensaje</button>}
             <button onClick={() => navigate('/dash-buscador')} style={{ background: '#f0f0f0', color: '#555', padding: '10px 18px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '14px' }}>← Volver</button>

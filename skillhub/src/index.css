@@ -117,35 +117,67 @@ hr {
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
-  input, select, textarea { max-width: 100%; }
+  input, select, textarea { max-width: 100%; margin: 4px 0; }
 
-  div[style*="display: flex"][style*="gap: 24px"] {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
+  /* Explorar: card del profesional apila imagen arriba */
+  .prof-card-inner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  .prof-card-inner img {
+    width: 64px !important;
+    height: 64px !important;
+  }
+
+  /* Botones de contacto ocupan todo el ancho */
+  .prof-card-actions {
+    flex-direction: column !important;
+  }
+  .prof-card-actions a,
+  .prof-card-actions > a {
+    display: block !important;
+    text-align: center !important;
+    width: 100% !important;
+  }
+
+  /* Carrusel: 1 columna en mobile */
+  .carrusel-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* PerfilProfesional header: foto + nombre se apila */
+  .perfil-header-top {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    margin-top: -20px !important;
+  }
+
+  /* Botones del perfil: columna */
+  .perfil-acciones {
+    flex-direction: column !important;
+  }
+  .perfil-acciones a,
+  .perfil-acciones button {
+    width: 100% !important;
+    text-align: center !important;
+    margin: 4px 0 !important;
+    box-sizing: border-box !important;
   }
 
   div[style*="grid-template-columns: 1fr 1fr"] {
     grid-template-columns: 1fr !important;
   }
-
-  div[style*="display: flex"][style*="gap: 10px"] {
-    flex-direction: column;
-  }
 }
 
 @media (max-width: 480px) {
-  h2 { font-size: 20px; }
-  h3 { font-size: 16px; }
+  h2 { font-size: 18px; }
+  h3 { font-size: 15px; }
 
   div[style*="border-radius: 12px"] { padding: 14px !important; }
 
   div[style*="grid-template-columns: repeat(auto-fill"] {
     grid-template-columns: 1fr !important;
-  }
-
-  div[style*="flex-direction: column"][style*="gap: 10px"] {
-    width: 100%;
   }
 
   button, a[style*="padding: 10px"] {

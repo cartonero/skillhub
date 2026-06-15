@@ -55,7 +55,7 @@ function Explorar() {
         </select>
         <input placeholder="Localidad" value={localidad}
           onChange={(e) => setLocalidad(e.target.value)} style={{ flex: 1 }} />
-        <button onClick={buscar}>Buscar</button>
+        <button onClick={buscar} style={{ width: '100%' }}>Buscar</button>
       </div>
 
       <div>
@@ -80,7 +80,7 @@ function Explorar() {
               onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.14)'}
               onMouseLeave={e => e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)'}
             >
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+              <div className="prof-card-inner" style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
                 <img
                   src={p.perfiles?.foto_perfil || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.perfiles?.nombre || 'P')}&background=f4a261&color=fff&size=80`}
                   alt={p.perfiles?.nombre}
@@ -106,7 +106,7 @@ function Explorar() {
                   </div>
                 </div>
               </div>
-              <div style={{ marginTop: '14px', display: 'flex', gap: '10px' }}>
+              <div className="prof-card-actions" style={{ marginTop: '14px', display: 'flex', gap: '10px' }}>
                 {p.perfiles?.telefono && (
                   <a href={`https://wa.me/${p.perfiles.telefono}`} target="_blank"
                     style={{ background: '#25d366', color: 'white', padding: '8px 14px', borderRadius: '6px', fontSize: '14px' }}>
