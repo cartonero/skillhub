@@ -4,6 +4,7 @@ import { supabase } from '../services/supabase'
 import { Link } from 'react-router-dom'
 
 function DashBuscador() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
   const [profesionales, setProfesionales] = useState([])
   const [rubro, setRubro] = useState('')
   const [localidad, setLocalidad] = useState('')
@@ -16,6 +17,12 @@ function DashBuscador() {
   const [editNombre, setEditNombre] = useState('')
   const [mensajeConfig, setMensajeConfig] = useState('')
   const avatarRef = useRef(null)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     async function init() {
@@ -208,7 +215,7 @@ function DashBuscador() {
       )}
 
       {/* Encabezado buscador / favoritos */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '10px', marginBottom: '24px' }}>
         <h2 style={{ margin: 0 }}>{vistaFavoritos ? '❤️ Mis favoritos' : '🔍 Buscar profesionales'}</h2>
         <button
           onClick={() => { setVistaFavoritos(!vistaFavoritos); setVistaConfig(false) }}
@@ -260,7 +267,7 @@ function DashBuscador() {
               onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.14)'}
               onMouseLeave={e => e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)'}
             >
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', flexDirection: isMobile ? 'column' : 'row' }}>
                 <img
                   src={p.perfiles?.foto_perfil || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.perfiles?.nombre || 'P')}&background=f4a261&color=fff&size=80`}
                   alt={p.perfiles?.nombre}
@@ -295,7 +302,7 @@ function DashBuscador() {
                   </div>
                 </div>
               </div>
-              <div style={{ marginTop: '14px', display: 'flex', gap: '10px' }}>
+              <div style={{ marginTop: '14px', display: 'flex', gap: '8px', flexDirection: isMobile ? 'column' : 'row' }}>
                 {p.perfiles?.telefono && (
                   <a href={`https://wa.me/${p.perfiles.telefono}`} target="_blank"
                     style={{ background: '#25d366', color: 'white', padding: '8px 14px', borderRadius: '6px', fontSize: '14px' }}>
