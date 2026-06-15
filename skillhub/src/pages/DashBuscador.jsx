@@ -277,7 +277,7 @@ function DashBuscador() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <h3 style={{ marginBottom: '6px' }}>{p.perfiles?.nombre || 'Sin nombre'}</h3>
                       <button onClick={() => toggleFavorito(p.id)}
-                        style={{ background: 'transparent', border: 'none', fontSize: '22px', cursor: 'pointer', padding: '0 0 0 8px', flexShrink: 0, lineHeight: 1 }}
+                        style={{ background: 'transparent', border: 'none', fontSize: '22px', cursor: 'pointer', padding: '0 0 0 8px', flexShrink: 0, lineHeight: 1, width: 'auto', margin: 0 }}
                         title={esFavorito ? 'Quitar de favoritos' : 'Agregar a favoritos'}>
                         {esFavorito ? '❤️' : '🤍'}
                       </button>
