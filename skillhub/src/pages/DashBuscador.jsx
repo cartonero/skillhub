@@ -267,38 +267,36 @@ function DashBuscador() {
               onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.14)'}
               onMouseLeave={e => e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)'}
             >
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', flexDirection: isMobile ? 'column' : 'row' }}>
-                <img
-                  src={p.perfiles?.foto_perfil || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.perfiles?.nombre || 'P')}&background=f4a261&color=fff&size=80`}
-                  alt={p.perfiles?.nombre}
-                  style={{ width: '72px', height: '72px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #f4a261', flexShrink: 0 }}
-                />
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <h3 style={{ marginBottom: '6px' }}>{p.perfiles?.nombre || 'Sin nombre'}</h3>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
-                        <span style={{
-                          background: colorRubro.bg, color: colorRubro.color,
-                          padding: '2px 10px', borderRadius: '999px', fontSize: '12px',
-                          fontWeight: '500', textTransform: 'capitalize',
-                        }}>{p.rubro}</span>
-                        <span style={{ color: '#888', fontSize: '13px' }}>📍 {p.perfiles?.localidad || 'No especificada'}, {p.perfiles?.provincia || ''}</span>
-                      </div>
-                      <p style={{ color: '#555', fontSize: '14px', marginBottom: '6px' }}>{descripcionCorta}</p>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '13px' }}>{p.disponible ? '✅ Disponible' : '❌ No disponible'}</span>
-                        {promedio
-                          ? <span style={{ fontSize: '13px' }}>⭐ <strong>{promedio}</strong> / 5 ({p.resenias.length} reseñas)</span>
-                          : <span style={{ fontSize: '13px', color: '#999' }}>⭐ Sin reseñas aún</span>
-                        }
-                      </div>
+              <div style={{ position: 'relative' }}>
+                <button onClick={() => toggleFavorito(p.id)}
+                  style={{ position: 'absolute', top: 0, right: 0, background: 'transparent', border: 'none', fontSize: '22px', cursor: 'pointer', padding: '4px' }}
+                  title={esFavorito ? 'Quitar de favoritos' : 'Agregar a favoritos'}>
+                  {esFavorito ? '❤️' : '🤍'}
+                </button>
+                <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start', paddingRight: '36px' }}>
+                  <img
+                    src={p.perfiles?.foto_perfil || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.perfiles?.nombre || 'P')}&background=f4a261&color=fff&size=80`}
+                    alt={p.perfiles?.nombre}
+                    style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #f4a261', flexShrink: 0 }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h3 style={{ marginBottom: '6px' }}>{p.perfiles?.nombre || 'Sin nombre'}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                      <span style={{
+                        background: colorRubro.bg, color: colorRubro.color,
+                        padding: '2px 10px', borderRadius: '999px', fontSize: '12px',
+                        fontWeight: '500', textTransform: 'capitalize',
+                      }}>{p.rubro}</span>
+                      <span style={{ color: '#888', fontSize: '13px' }}>📍 {p.perfiles?.localidad || 'No especificada'}, {p.perfiles?.provincia || ''}</span>
                     </div>
-                    <button onClick={() => toggleFavorito(p.id)}
-                      style={{ background: 'transparent', border: 'none', fontSize: '22px', cursor: 'pointer', padding: '4px', flexShrink: 0 }}
-                      title={esFavorito ? 'Quitar de favoritos' : 'Agregar a favoritos'}>
-                      {esFavorito ? '❤️' : '🤍'}
-                    </button>
+                    <p style={{ color: '#555', fontSize: '14px', marginBottom: '6px' }}>{descripcionCorta}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '13px' }}>{p.disponible ? '✅ Disponible' : '❌ No disponible'}</span>
+                      {promedio
+                        ? <span style={{ fontSize: '13px' }}>⭐ <strong>{promedio}</strong> / 5 ({p.resenias.length} reseñas)</span>
+                        : <span style={{ fontSize: '13px', color: '#999' }}>⭐ Sin reseñas aún</span>
+                      }
+                    </div>
                   </div>
                 </div>
               </div>
