@@ -15,6 +15,11 @@ function DashProfesional() {
   const [nuevoPortDesc, setNuevoPortDesc] = useState('')
   const [editandoPort, setEditandoPort] = useState(null)
   const [descFotos, setDescFotos] = useState({})
+  // ── Loading states ──
+  const [guardando, setGuardando] = useState(false)
+  const [subiendoAvatar, setSubiendoAvatar] = useState(false)
+  const [creandoPort, setCreandoPort] = useState(false)
+  const [subiendoFotos, setSubiendoFotos] = useState({})
   const avatarRef = useRef(null)
   const fotoRefs = useRef({})
   const navigate = useNavigate()
@@ -36,9 +41,8 @@ function DashProfesional() {
   async function cargarNotificaciones(uid) {
     const { data } = await supabase.from('notificaciones').select('*').eq('usuario_id', uid).order('created_at', { ascending: false })
     if (data) setNotificaciones(data)
-    const tieneSinLeer = data?.some(n => !n.leida)
+    // Mejora 1: eliminado window.location.reload() — solo marcamos como leídas
     await supabase.from('notificaciones').update({ leida: true }).eq('usuario_id', uid).eq('leida', false)
-    if (tieneSinLeer) window.location.reload()
   }
 
   async function cargarPortafolios(uid) {
@@ -53,10 +57,15 @@ function DashProfesional() {
 
   async function crearPortafolio() {
     if (!nuevoPortTitulo.trim()) return
-    await supabase.from('portafolios').insert({ profesional_id: userId, titulo: nuevoPortTitulo, descripcion: nuevoPortDesc })
-    setNuevoPortTitulo('')
-    setNuevoPortDesc('')
-    cargarPortafolios(userId)
+    setCreandoPort(true)
+    try {
+      await supabase.from('portafolios').insert({ profesional_id: userId, titulo: nuevoPortTitulo, descripcion: nuevoPortDesc })
+      setNuevoPortTitulo('')
+      setNuevoPortDesc('')
+      cargarPortafolios(userId)
+    } finally {
+      setCreandoPort(false)
+    }
   }
 
   async function guardarEdicionPort(port) {
@@ -75,52 +84,60 @@ function DashProfesional() {
   async function subirFotoAPort(portId) {
     const ref = fotoRefs.current[portId]
     if (!ref?.files[0]) return
-    const archivo = ref.files[0]
-    const nombreArchivo = `${userId}/${Date.now()}_${archivo.name}`
-    const { error } = await supabase.storage.from('trabajos').upload(nombreArchivo, archivo)
-    if (error) { setMensaje('❌ Error subiendo la foto'); return }
-    const { data: urlData } = supabase.storage.from('trabajos').getPublicUrl(nombreArchivo)
-    await supabase.from('trabajos').insert({
-      profesional_id: userId,
-      portafolio_id: portId,
-      foto_url: urlData.publicUrl,
-      descripcion: descFotos[portId] || ''
-    })
-    setDescFotos({ ...descFotos, [portId]: '' })
-    ref.value = ''
-    cargarPortafolios(userId)
+    setSubiendoFotos(prev => ({ ...prev, [portId]: true }))
+    try {
+      const archivo = ref.files[0]
+      const nombreArchivo = `${userId}/${Date.now()}_${archivo.name}`
+      const { error } = await supabase.storage.from('trabajos').upload(nombreArchivo, archivo)
+      if (error) { setMensaje('❌ Error subiendo la foto'); return }
+      const { data: urlData } = supabase.storage.from('trabajos').getPublicUrl(nombreArchivo)
+      await supabase.from('trabajos').insert({
+        profesional_id: userId, portafolio_id: portId,
+        foto_url: urlData.publicUrl, descripcion: descFotos[portId] || ''
+      })
+      setDescFotos({ ...descFotos, [portId]: '' })
+      ref.value = ''
+      cargarPortafolios(userId)
+    } finally {
+      setSubiendoFotos(prev => ({ ...prev, [portId]: false }))
+    }
   }
 
-  async function eliminarImagen(imgId, portId) {
+  async function eliminarImagen(imgId) {
     if (!window.confirm('¿Eliminar esta imagen?')) return
     await supabase.from('trabajos').delete().eq('id', imgId)
-    cargarPortafolios(portId ? userId : userId)
+    cargarPortafolios(userId)
   }
 
   async function subirAvatar() {
     const archivo = avatarRef.current.files[0]
     if (!archivo) return
-    const nombreArchivo = `${userId}/avatar_${Date.now()}.${archivo.name.split('.').pop()}`
-    const { error } = await supabase.storage.from('avatares').upload(nombreArchivo, archivo)
-    if (error) { setMensaje('❌ Error subiendo la foto de perfil'); return }
-    const { data: urlData } = supabase.storage.from('avatares').getPublicUrl(nombreArchivo)
-    await supabase.from('perfiles').update({ foto_perfil: urlData.publicUrl }).eq('id', userId)
-    setPerfil({ ...perfil, foto_perfil: urlData.publicUrl })
-    setMensaje('✅ Foto de perfil actualizada')
-    avatarRef.current.value = ''
+    setSubiendoAvatar(true)
+    try {
+      const nombreArchivo = `${userId}/avatar_${Date.now()}.${archivo.name.split('.').pop()}`
+      const { error } = await supabase.storage.from('avatares').upload(nombreArchivo, archivo)
+      if (error) { setMensaje('❌ Error subiendo la foto de perfil'); return }
+      const { data: urlData } = supabase.storage.from('avatares').getPublicUrl(nombreArchivo)
+      await supabase.from('perfiles').update({ foto_perfil: urlData.publicUrl }).eq('id', userId)
+      setPerfil({ ...perfil, foto_perfil: urlData.publicUrl })
+      setMensaje('✅ Foto de perfil actualizada')
+      avatarRef.current.value = ''
+    } finally {
+      setSubiendoAvatar(false)
+    }
   }
 
   async function guardarPerfil() {
-    const { error: errorPerfil } = await supabase.from('perfiles').update(perfil).eq('id', userId)
-    if (errorPerfil) { setMensaje('❌ Error guardando datos personales: ' + errorPerfil.message); return }
-
-    // Usamos upsert: si la fila en profesionales no existe por un bug en el registro, la crea automaticamente
-    const { error: errorProf } = await supabase
-      .from('profesionales')
-      .upsert({ ...prof, id: userId }, { onConflict: 'id' })
-    if (errorProf) { setMensaje('❌ Error guardando perfil profesional: ' + errorProf.message); return }
-
-    setMensaje('✅ Perfil guardado correctamente')
+    setGuardando(true)
+    try {
+      const { error: errorPerfil } = await supabase.from('perfiles').update(perfil).eq('id', userId)
+      if (errorPerfil) { setMensaje('❌ Error guardando datos personales: ' + errorPerfil.message); return }
+      const { error: errorProf } = await supabase.from('profesionales').upsert({ ...prof, id: userId }, { onConflict: 'id' })
+      if (errorProf) { setMensaje('❌ Error guardando perfil profesional: ' + errorProf.message); return }
+      setMensaje('✅ Perfil guardado correctamente')
+    } finally {
+      setGuardando(false)
+    }
   }
 
   async function borrarCuenta() {
@@ -162,7 +179,10 @@ function DashProfesional() {
           <p style={{ color: '#666', marginBottom: '12px' }}>{prof.rubro} — {perfil.localidad}, {perfil.provincia}</p>
           <div className="dash-foto-botones" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <input type="file" accept="image/*" ref={avatarRef} style={{ fontSize: '12px', maxWidth: '160px', margin: 0 }} />
-            <button onClick={subirAvatar} style={{ padding: '6px 12px', fontSize: '12px', margin: 0, whiteSpace: 'nowrap' }}>Cambiar foto</button>
+            <button onClick={subirAvatar} disabled={subiendoAvatar}
+              style={{ padding: '6px 12px', fontSize: '12px', margin: 0, whiteSpace: 'nowrap', opacity: subiendoAvatar ? 0.6 : 1 }}>
+              {subiendoAvatar ? '⏳ Subiendo...' : 'Cambiar foto'}
+            </button>
           </div>
         </div>
       </div>
@@ -203,34 +223,31 @@ function DashProfesional() {
           Disponible para trabajos
         </label>
         <br />
-        <button onClick={guardarPerfil}>Guardar perfil</button>
+        <button onClick={guardarPerfil} disabled={guardando} style={{ opacity: guardando ? 0.6 : 1 }}>
+          {guardando ? '⏳ Guardando...' : 'Guardar perfil'}
+        </button>
         {mensaje && <p style={{ marginTop: '10px' }}>{mensaje}</p>}
       </div>
 
       {/* Gestión de portafolios */}
       <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '24px', marginBottom: '24px' }}>
         <h3 style={{ marginBottom: '16px' }}>📸 Mis portafolios</h3>
-
-        {/* Crear nuevo portafolio */}
         <div style={{ background: '#f8f8f8', borderRadius: '12px', padding: '16px', marginBottom: '20px', border: '1px dashed #ddd' }}>
           <p style={{ fontSize: '13px', fontWeight: '500', color: '#555', marginBottom: '10px' }}>+ Crear nuevo portafolio</p>
           <input placeholder="Título del portafolio (ej: Instalaciones eléctricas)"
-            value={nuevoPortTitulo} onChange={(e) => setNuevoPortTitulo(e.target.value)}
-            style={{ marginBottom: '6px' }} />
+            value={nuevoPortTitulo} onChange={(e) => setNuevoPortTitulo(e.target.value)} style={{ marginBottom: '6px' }} />
           <input placeholder="Descripción opcional"
-            value={nuevoPortDesc} onChange={(e) => setNuevoPortDesc(e.target.value)}
-            style={{ marginBottom: '10px' }} />
-          <button onClick={crearPortafolio} style={{ padding: '8px 16px', fontSize: '13px' }}>Crear portafolio</button>
+            value={nuevoPortDesc} onChange={(e) => setNuevoPortDesc(e.target.value)} style={{ marginBottom: '10px' }} />
+          <button onClick={crearPortafolio} disabled={creandoPort}
+            style={{ padding: '8px 16px', fontSize: '13px', opacity: creandoPort ? 0.6 : 1 }}>
+            {creandoPort ? '⏳ Creando...' : 'Crear portafolio'}
+          </button>
         </div>
 
-        {portafolios.length === 0 && (
-          <p style={{ color: '#999', fontSize: '13px' }}>No tenés portafolios aún. Creá uno arriba.</p>
-        )}
+        {portafolios.length === 0 && <p style={{ color: '#999', fontSize: '13px' }}>No tenés portafolios aún. Creá uno arriba.</p>}
 
         {portafolios.map((port) => (
           <div key={port.id} style={{ border: '1px solid #eee', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
-
-            {/* Header del portafolio */}
             {editandoPort?.id === port.id ? (
               <div style={{ marginBottom: '12px' }}>
                 <input value={editandoPort.titulo} onChange={(e) => setEditandoPort({ ...editandoPort, titulo: e.target.value })} style={{ marginBottom: '6px' }} />
@@ -255,34 +272,27 @@ function DashProfesional() {
               </div>
             )}
 
-            {/* Imágenes del portafolio */}
             {port.imagenes.length > 0 && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px', marginBottom: '14px' }}>
                 {port.imagenes.map((img) => (
                   <div key={img.id} style={{ borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.1)', position: 'relative' }}>
                     <img src={img.foto_url} alt={img.descripcion} style={{ width: '100%', height: '100px', objectFit: 'cover', display: 'block' }} />
-                    <button
-                      onClick={() => eliminarImagen(img.id)}
-                      style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: '22px', height: '22px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: 0, padding: 0 }}
-                    >✕</button>
+                    <button onClick={() => eliminarImagen(img.id)}
+                      style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: '22px', height: '22px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: 0, padding: 0 }}>✕</button>
                     {img.descripcion && <p style={{ padding: '4px 6px', fontSize: '11px', color: '#555', margin: 0 }}>{img.descripcion}</p>}
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Subir foto al portafolio */}
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', background: '#fafafa', padding: '10px', borderRadius: '8px' }}>
-              <input type="file" accept="image/*"
-                ref={el => fotoRefs.current[port.id] = el}
-                style={{ fontSize: '12px', maxWidth: '180px', margin: 0 }} />
-              <input placeholder="Descripción (opcional)"
-                value={descFotos[port.id] || ''}
+              <input type="file" accept="image/*" ref={el => fotoRefs.current[port.id] = el} style={{ fontSize: '12px', maxWidth: '180px', margin: 0 }} />
+              <input placeholder="Descripción (opcional)" value={descFotos[port.id] || ''}
                 onChange={(e) => setDescFotos({ ...descFotos, [port.id]: e.target.value })}
                 style={{ flex: 1, fontSize: '12px', margin: 0 }} />
-              <button onClick={() => subirFotoAPort(port.id)}
-                style={{ padding: '6px 12px', fontSize: '12px', margin: 0 }}>
-                + Agregar foto
+              <button onClick={() => subirFotoAPort(port.id)} disabled={subiendoFotos[port.id]}
+                style={{ padding: '6px 12px', fontSize: '12px', margin: 0, opacity: subiendoFotos[port.id] ? 0.6 : 1 }}>
+                {subiendoFotos[port.id] ? '⏳ Subiendo...' : '+ Agregar foto'}
               </button>
             </div>
           </div>
