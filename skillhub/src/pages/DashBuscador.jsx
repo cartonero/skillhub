@@ -238,7 +238,9 @@ function DashBuscador() {
             {RUBROS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
           </select>
           <input placeholder="Localidad" value={localidad}
-            onChange={(e) => setLocalidad(e.target.value)} style={{ flex: 1 }} />
+            onChange={(e) => setLocalidad(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && buscar()}
+            style={{ flex: 1 }} />
           <button onClick={buscar}>Buscar</button>
         </div>
       )}
