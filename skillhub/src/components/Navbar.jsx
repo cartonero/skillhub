@@ -82,7 +82,7 @@ function NavbarContenido() {
     <nav style={{ backgroundColor: '#1a1a2e', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(0,0,0,0.2)', position: 'sticky', top: 0, zIndex: 1000 }}>
       
       {/* Logo */}
-      <div onClick={() => navigate(-1)} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flexShrink: 0 }}>
+      <div onClick={() => navigate(rol === 'profesional' ? '/dash-profesional' : rol === 'buscador' ? '/dash-buscador' : '/login')} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flexShrink: 0 }}>
         <div style={{ backgroundColor: '#f4a261', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '16px', color: 'white', flexShrink: 0 }}>S</div>
         <span style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>SkillHub</span>
       </div>

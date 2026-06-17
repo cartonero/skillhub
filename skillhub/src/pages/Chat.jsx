@@ -15,14 +15,11 @@ function Chat() {
   const [enviando, setEnviando] = useState(false)
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
-  const uidRef = useRef(null) // ref para acceder al uid dentro del canal
-
   useEffect(() => {
     async function init() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { navigate('/login'); return }
       setUserId(user.id)
-      uidRef.current = user.id
 
       // Cargar nombre propio para notificaciones
       const { data: miPerfil } = await supabase
@@ -37,30 +34,6 @@ function Chat() {
       setCargando(false)
     }
     init()
-  }, [profesionalId])
-
-  // ── Realtime: escuchar mensajes nuevos de la conversación ──
-  useEffect(() => {
-    const canal = supabase
-      .channel(`chat_${profesionalId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'mensajes',
-      }, (payload) => {
-        const nuevo = payload.new
-        const uid = uidRef.current
-        // Solo agregar si pertenece a esta conversación
-        const esDeEstaConv =
-          (nuevo.de_id === uid && nuevo.para_id === profesionalId) ||
-          (nuevo.de_id === profesionalId && nuevo.para_id === uid)
-        if (esDeEstaConv) {
-          setMensajes(prev => [...prev, nuevo])
-        }
-      })
-      .subscribe()
-
-    return () => supabase.removeChannel(canal)
   }, [profesionalId])
 
   useEffect(() => {
@@ -95,6 +68,8 @@ function Chat() {
       leida: false,
     })
 
+    // Recargar mensajes para mostrar el enviado
+    await cargarMensajes(userId)
     setEnviando(false)
     inputRef.current?.focus()
   }
