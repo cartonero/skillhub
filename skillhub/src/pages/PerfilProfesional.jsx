@@ -142,7 +142,18 @@ function PerfilProfesional() {
 
   async function enviarResenia() {
     if (!userId) { setMensaje('❌ Tenés que iniciar sesión para calificar'); return }
+    if (userId === id) { setMensaje('❌ No podés calificarte a vos mismo'); return }
     if (!comentario.trim()) { setMensaje('❌ Escribí un comentario'); return }
+
+    // Verificar si ya dejó una reseña
+    const { data: existente } = await supabase
+      .from('resenias')
+      .select('id')
+      .eq('profesional_id', id)
+      .eq('buscador_id', userId)
+      .single()
+    if (existente) { setMensaje('❌ Ya dejaste una reseña para este profesional'); return }
+
     const { error } = await supabase.from('resenias').insert({ profesional_id: id, buscador_id: userId, estrellas, comentario })
     if (error) { setMensaje('❌ Error al enviar la reseña'); return }
     await supabase.from('notificaciones').insert({
@@ -263,21 +274,27 @@ function PerfilProfesional() {
           )}
         </div>
 
-        {/* Formulario nueva reseña */}
-        <div style={{ padding: '0 24px 24px', borderBottom: '1px solid #f0f0f0' }}>
-          <h4 style={{ margin: '0 0 14px', color: '#333', fontSize: '15px' }}>Dejá tu opinión</h4>
-          <div style={{ marginBottom: '14px' }}>
-            <p style={{ fontSize: '13px', color: '#666', margin: '0 0 8px' }}>¿Cómo calificás el servicio?</p>
-            <Estrellas valor={estrellas} onChange={setEstrellas} />
+        {/* Formulario nueva reseña — oculto si es el propio profesional o ya reseñó */}
+        {userId && userId !== id && !resenias.some(r => r.buscador_id === userId) ? (
+          <div style={{ padding: '0 24px 24px', borderBottom: '1px solid #f0f0f0' }}>
+            <h4 style={{ margin: '0 0 14px', color: '#333', fontSize: '15px' }}>Dejá tu opinión</h4>
+            <div style={{ marginBottom: '14px' }}>
+              <p style={{ fontSize: '13px', color: '#666', margin: '0 0 8px' }}>¿Cómo calificás el servicio?</p>
+              <Estrellas valor={estrellas} onChange={setEstrellas} />
+            </div>
+            <textarea placeholder="Contá tu experiencia con este profesional..." value={comentario}
+              onChange={(e) => setComentario(e.target.value)}
+              style={{ width: '100%', maxWidth: '100%', height: '90px', resize: 'vertical', borderRadius: '8px', border: '1.5px solid #e0e0e0', padding: '10px 12px', fontSize: '14px', fontFamily: 'inherit' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px', flexWrap: 'wrap' }}>
+              <button onClick={enviarResenia} style={{ padding: '10px 24px', fontSize: '14px', margin: 0 }}>Publicar reseña</button>
+              {mensaje && <span style={{ fontSize: '13px', color: mensaje.includes('✅') ? '#1e8449' : '#c0392b', fontWeight: '500' }}>{mensaje}</span>}
+            </div>
           </div>
-          <textarea placeholder="Contá tu experiencia con este profesional..." value={comentario}
-            onChange={(e) => setComentario(e.target.value)}
-            style={{ width: '100%', maxWidth: '100%', height: '90px', resize: 'vertical', borderRadius: '8px', border: '1.5px solid #e0e0e0', padding: '10px 12px', fontSize: '14px', fontFamily: 'inherit' }} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px', flexWrap: 'wrap' }}>
-            <button onClick={enviarResenia} style={{ padding: '10px 24px', fontSize: '14px', margin: 0 }}>Publicar reseña</button>
-            {mensaje && <span style={{ fontSize: '13px', color: mensaje.includes('✅') ? '#1e8449' : '#c0392b', fontWeight: '500' }}>{mensaje}</span>}
+        ) : userId && userId !== id ? (
+          <div style={{ padding: '16px 24px', borderBottom: '1px solid #f0f0f0', background: '#f8f8f8', borderRadius: '8px', margin: '0 24px 16px' }}>
+            <p style={{ fontSize: '14px', color: '#888', margin: 0 }}>✅ Ya dejaste una reseña para este profesional.</p>
           </div>
-        </div>
+        ) : null}
 
         {/* Lista de reseñas */}
         <div style={{ padding: '0 24px 8px' }}>
