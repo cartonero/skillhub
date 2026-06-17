@@ -8,28 +8,59 @@ function Chat() {
   const [mensajes, setMensajes] = useState([])
   const [nuevoMensaje, setNuevoMensaje] = useState('')
   const [userId, setUserId] = useState(null)
+  const [userIdRef, setUserIdRef] = useState(null) // para usar en el canal realtime
   const [perfilProfesional, setPerfilProfesional] = useState(null)
+  const [nombrePropio, setNombrePropio] = useState('')
   const [cargando, setCargando] = useState(true)
+  const [enviando, setEnviando] = useState(false)
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
+  const uidRef = useRef(null) // ref para acceder al uid dentro del canal
 
   useEffect(() => {
     async function init() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { navigate('/login'); return }
       setUserId(user.id)
+      uidRef.current = user.id
+
+      // Cargar nombre propio para notificaciones
+      const { data: miPerfil } = await supabase
+        .from('perfiles').select('nombre').eq('id', user.id).single()
+      if (miPerfil?.nombre) setNombrePropio(miPerfil.nombre)
 
       const { data: perfil } = await supabase
-        .from('perfiles')
-        .select('nombre, foto_perfil')
-        .eq('id', profesionalId)
-        .single()
+        .from('perfiles').select('nombre, foto_perfil').eq('id', profesionalId).single()
       if (perfil) setPerfilProfesional(perfil)
 
       await cargarMensajes(user.id)
       setCargando(false)
     }
     init()
+  }, [profesionalId])
+
+  // ── Realtime: escuchar mensajes nuevos de la conversación ──
+  useEffect(() => {
+    const canal = supabase
+      .channel(`chat_${profesionalId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'mensajes',
+      }, (payload) => {
+        const nuevo = payload.new
+        const uid = uidRef.current
+        // Solo agregar si pertenece a esta conversación
+        const esDeEstaConv =
+          (nuevo.de_id === uid && nuevo.para_id === profesionalId) ||
+          (nuevo.de_id === profesionalId && nuevo.para_id === uid)
+        if (esDeEstaConv) {
+          setMensajes(prev => [...prev, nuevo])
+        }
+      })
+      .subscribe()
+
+    return () => supabase.removeChannel(canal)
   }, [profesionalId])
 
   useEffect(() => {
@@ -46,28 +77,37 @@ function Chat() {
   }
 
   async function enviar() {
-    if (!nuevoMensaje.trim()) return
+    if (!nuevoMensaje.trim() || enviando) return
+    setEnviando(true)
+    const contenido = nuevoMensaje.trim()
+    setNuevoMensaje('')
+
     await supabase.from('mensajes').insert({
       de_id: userId,
       para_id: profesionalId,
-      contenido: nuevoMensaje.trim()
+      contenido,
     })
-    setNuevoMensaje('')
-    await cargarMensajes(userId)
+
+    // Notificar al profesional que recibió un mensaje
+    await supabase.from('notificaciones').insert({
+      usuario_id: profesionalId,
+      mensaje: `💬 ${nombrePropio || 'Un usuario'} te envió un mensaje.`,
+      leida: false,
+    })
+
+    setEnviando(false)
     inputRef.current?.focus()
   }
 
   function parseTS(ts) {
-    const s = ts && !ts.endsWith("Z") ? ts + "Z" : ts
+    const s = ts && !ts.endsWith('Z') ? ts + 'Z' : ts
     return new Date(s)
   }
-
-  function formatHora(timestamp) {
-    return parseTS(timestamp).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
+  function formatHora(ts) {
+    return parseTS(ts).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
   }
-
-  function formatFecha(timestamp) {
-    return parseTS(timestamp).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', timeZone: 'America/Argentina/Buenos_Aires' })
+  function formatFecha(ts) {
+    return parseTS(ts).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', timeZone: 'America/Argentina/Buenos_Aires' })
   }
 
   // Agrupar mensajes por fecha
@@ -89,87 +129,43 @@ function Chat() {
 
   return (
     <div style={{ maxWidth: '720px', margin: '24px auto', padding: '0 20px' }}>
-      <div style={{
-        background: 'white', borderRadius: '16px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.1)', overflow: 'hidden',
-        display: 'flex', flexDirection: 'column', height: '580px',
-      }}>
+      <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '580px' }}>
 
-        {/* Header estilo Messenger */}
-        <div style={{
-          background: '#1a1a2e', padding: '14px 20px',
-          display: 'flex', alignItems: 'center', gap: '12px',
-          flexShrink: 0,
-        }}>
-          <img
-            src={avatarProfesional}
-            alt="foto"
-            style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #f4a261' }}
-          />
+        {/* Header */}
+        <div style={{ background: '#1a1a2e', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+          <img src={avatarProfesional} alt="foto" style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #f4a261' }} />
           <div style={{ flex: 1 }}>
-            <p style={{ color: 'white', fontWeight: '600', margin: 0, fontSize: '15px' }}>
-              {perfilProfesional?.nombre || 'Profesional'}
-            </p>
+            <p style={{ color: 'white', fontWeight: '600', margin: 0, fontSize: '15px' }}>{perfilProfesional?.nombre || 'Profesional'}</p>
             <p style={{ color: '#8899aa', fontSize: '11px', margin: 0 }}>Conversación privada</p>
           </div>
-          <button
-            onClick={() => navigate(-1)}
-            style={{
-              background: 'transparent', border: '1px solid #445',
-              color: '#aaa', padding: '6px 14px', borderRadius: '8px',
-              cursor: 'pointer', fontSize: '12px',
-            }}
-          >
+          <button onClick={() => navigate(-1)} style={{ background: 'transparent', border: '1px solid #445', color: '#aaa', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>
             ← Volver
           </button>
         </div>
 
-        {/* Área de mensajes */}
-        <div style={{
-          flex: 1, overflowY: 'auto', padding: '16px 20px',
-          background: '#f0f2f5', display: 'flex', flexDirection: 'column', gap: '4px',
-        }}>
+        {/* Mensajes */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', background: '#f0f2f5', display: 'flex', flexDirection: 'column', gap: '4px' }}>
           {mensajes.length === 0 && (
             <div style={{ textAlign: 'center', marginTop: '60px' }}>
               <div style={{ fontSize: '48px', marginBottom: '12px' }}>💬</div>
               <p style={{ color: '#999', fontSize: '14px' }}>No hay mensajes aún. ¡Enviá el primero!</p>
             </div>
           )}
-
           {mensajesConFecha.map((item) => {
             if (item.tipo === 'fecha') {
               return (
                 <div key={item.key} style={{ textAlign: 'center', margin: '12px 0 8px' }}>
-                  <span style={{
-                    background: '#dde0e5', color: '#666', fontSize: '11px',
-                    padding: '3px 10px', borderRadius: '10px',
-                  }}>{formatFecha(item.fecha)}</span>
+                  <span style={{ background: '#dde0e5', color: '#666', fontSize: '11px', padding: '3px 10px', borderRadius: '10px' }}>{formatFecha(item.fecha)}</span>
                 </div>
               )
             }
-
             const esMio = item.de_id === userId
             return (
-              <div key={item.id} style={{
-                display: 'flex', justifyContent: esMio ? 'flex-end' : 'flex-start',
-                alignItems: 'flex-end', gap: '6px', marginBottom: '2px',
-              }}>
-                {!esMio && (
-                  <img src={avatarProfesional} alt=""
-                    style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-                )}
-                <div style={{
-                  background: esMio ? '#f4a261' : 'white',
-                  color: esMio ? 'white' : '#1a1a2e',
-                  padding: '9px 13px',
-                  borderRadius: esMio ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                  maxWidth: '65%',
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
-                }}>
+              <div key={item.id} style={{ display: 'flex', justifyContent: esMio ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: '6px', marginBottom: '2px' }}>
+                {!esMio && <img src={avatarProfesional} alt="" style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />}
+                <div style={{ background: esMio ? '#f4a261' : 'white', color: esMio ? 'white' : '#1a1a2e', padding: '9px 13px', borderRadius: esMio ? '18px 18px 4px 18px' : '18px 18px 18px 4px', maxWidth: '65%', boxShadow: '0 1px 2px rgba(0,0,0,0.08)' }}>
                   <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.4' }}>{item.contenido}</p>
-                  <p style={{ margin: '3px 0 0', fontSize: '10px', opacity: 0.65, textAlign: 'right' }}>
-                    {formatHora(item.created_at)}
-                  </p>
+                  <p style={{ margin: '3px 0 0', fontSize: '10px', opacity: 0.65, textAlign: 'right' }}>{formatHora(item.created_at)}</p>
                 </div>
                 {esMio && <div style={{ width: '28px', flexShrink: 0 }} />}
               </div>
@@ -179,40 +175,25 @@ function Chat() {
         </div>
 
         {/* Input */}
-        <div style={{
-          padding: '12px 16px', background: 'white',
-          borderTop: '1px solid #e8e8e8', display: 'flex', gap: '10px', alignItems: 'center',
-          flexShrink: 0,
-        }}>
+        <div style={{ padding: '12px 16px', background: 'white', borderTop: '1px solid #e8e8e8', display: 'flex', gap: '10px', alignItems: 'center', flexShrink: 0 }}>
           <input
             ref={inputRef}
             placeholder="Escribí un mensaje..."
             value={nuevoMensaje}
             onChange={(e) => setNuevoMensaje(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && enviar()}
-            style={{
-              flex: 1, border: '1px solid #e0e0e0', borderRadius: '22px',
-              padding: '10px 18px', fontSize: '14px', outline: 'none',
-              background: '#f5f5f5', transition: 'border 0.2s',
-            }}
+            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && enviar()}
+            style={{ flex: 1, border: '1px solid #e0e0e0', borderRadius: '22px', padding: '10px 18px', fontSize: '14px', outline: 'none', background: '#f5f5f5', transition: 'border 0.2s' }}
             onFocus={e => e.target.style.borderColor = '#f4a261'}
             onBlur={e => e.target.style.borderColor = '#e0e0e0'}
           />
           <button
             onClick={enviar}
-            style={{
-              background: nuevoMensaje.trim() ? '#f4a261' : '#ddd',
-              color: 'white', border: 'none',
-              width: '40px', height: '40px', borderRadius: '50%',
-              cursor: nuevoMensaje.trim() ? 'pointer' : 'default',
-              fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0, transition: 'background 0.2s',
-            }}
+            disabled={enviando || !nuevoMensaje.trim()}
+            style={{ background: nuevoMensaje.trim() && !enviando ? '#f4a261' : '#ddd', color: 'white', border: 'none', width: '40px', height: '40px', borderRadius: '50%', cursor: nuevoMensaje.trim() ? 'pointer' : 'default', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.2s', margin: 0, padding: 0 }}
           >
-            ➤
+            {enviando ? '⏳' : '➤'}
           </button>
         </div>
-
       </div>
     </div>
   )
