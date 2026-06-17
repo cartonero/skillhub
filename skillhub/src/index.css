@@ -1,199 +1,36 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-/* ===== VARIABLES DE COLOR ===== */
-:root {
-  --navy:         #1a1a2e;
-  --navy-mid:     #0f3460;
-  --navy-deep:    #0d0d1a;
-  --orange:       #e07b39;
-  --orange-hover: #c9622a;
-  --orange-light: #fff3e8;
-  --green:        #1e8449;
-  --red:          #c0392b;
-  --text-dark:    #1a1a2e;
-  --text-mid:     #444;
-  --text-soft:    #666;
-  --text-hint:    #999;
-  --border:       #e0e0e0;
-  --surface:      #ffffff;
-  --bg-soft:      #f7f7f7;
-}
+    <!-- SEO básico -->
+    <title>SkillHub — Encontrá profesionales del hogar</title>
+    <meta name="description" content="Conectate con albañiles, electricistas, plomeros, carpinteros y más de 35 rubros en tu zona. Calificaciones reales de vecinos." />
+    <meta name="keywords" content="profesionales del hogar, albañil, electricista, plomero, carpintero, pintor, Buenos Aires, Argentina" />
+    <meta name="author" content="SkillHub" />
+    <meta name="robots" content="index, follow" />
 
-body {
-  font-family: 'Inter', 'Segoe UI', sans-serif;
-  background: radial-gradient(ellipse at 70% 30%, #2a4a7f 0%, #1e3a5f 60%, #152840 100%);
-  min-height: 100vh;
-  color: var(--text-mid);
-  -webkit-font-smoothing: antialiased;
-}
+    <!-- Open Graph (compartir en redes sociales) -->
+    <meta property="og:title" content="SkillHub — Encontrá profesionales del hogar" />
+    <meta property="og:description" content="Conectate con albañiles, electricistas, plomeros y más de 35 rubros en tu zona. Calificaciones reales de vecinos." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://skillhub-coral.vercel.app" />
+    <meta property="og:locale" content="es_AR" />
 
-h1, h2, h3 {
-  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
-  color: var(--text-dark);
-  font-weight: 700;
-  letter-spacing: -0.3px;
-}
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="SkillHub — Encontrá profesionales del hogar" />
+    <meta name="twitter:description" content="Conectate con albañiles, electricistas, plomeros y más de 35 rubros en tu zona." />
 
-h1 { font-size: 28px; }
-h2 { font-size: 22px; }
-h3 { font-size: 17px; }
-
-p {
-  font-family: 'Inter', sans-serif;
-  line-height: 1.6;
-}
-
-/* ===== INPUTS ===== */
-input, select, textarea {
-  font-family: 'Inter', sans-serif;
-  padding: 10px 12px;
-  margin: 6px 4px;
-  border: 1.5px solid var(--border);
-  border-radius: 8px;
-  font-size: 14px;
-  width: 100%;
-  max-width: 400px;
-  color: var(--text-dark);
-  background: var(--surface);
-  transition: border-color 0.2s;
-  outline: none;
-}
-
-input:focus, select:focus, textarea:focus {
-  border-color: var(--orange);
-  box-shadow: 0 0 0 3px rgba(224, 123, 57, 0.12);
-}
-
-/* ===== BOTONES ===== */
-button {
-  font-family: 'Inter', sans-serif;
-  padding: 10px 20px;
-  margin: 6px 4px;
-  background-color: var(--orange);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s;
-}
-
-button:hover {
-  background-color: var(--orange-hover);
-}
-
-button:active {
-  transform: scale(0.98);
-}
-
-/* ===== LINKS ===== */
-a {
-  font-family: 'Inter', sans-serif;
-  color: var(--orange);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-a:hover {
-  color: var(--orange-hover);
-  text-decoration: underline;
-}
-
-hr {
-  margin: 20px 0;
-  border: none;
-  border-top: 1px solid var(--border);
-}
-
-/* ===== SCROLLBAR ===== */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
-  input, select, textarea { max-width: 100%; margin: 4px 0; }
-
-  /* Explorar: card del profesional apila imagen arriba */
-  .prof-card-inner {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-  }
-  .prof-card-inner img {
-    width: 64px !important;
-    height: 64px !important;
-  }
-
-  /* Botones de contacto ocupan todo el ancho */
-  .prof-card-actions {
-    flex-direction: column !important;
-  }
-  .prof-card-actions a,
-  .prof-card-actions > a {
-    display: block !important;
-    text-align: center !important;
-    width: 100% !important;
-  }
-
-  /* Carrusel: 1 columna en mobile */
-  .carrusel-grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  /* PerfilProfesional header: foto + nombre se apila */
-  .perfil-header-top {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 12px !important;
-    margin-top: -20px !important;
-  }
-
-  /* Botones del perfil: columna */
-  .perfil-acciones {
-    flex-direction: column !important;
-  }
-  .perfil-acciones a,
-  .perfil-acciones button {
-    width: 100% !important;
-    text-align: center !important;
-    margin: 4px 0 !important;
-    box-sizing: border-box !important;
-  }
-
-  div[style*="grid-template-columns: 1fr 1fr"] {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-@media (max-width: 480px) {
-  h2 { font-size: 18px; }
-  h3 { font-size: 15px; }
-
-  div[style*="border-radius: 12px"] { padding: 14px !important; }
-
-  div[style*="grid-template-columns: repeat(auto-fill"] {
-    grid-template-columns: 1fr !important;
-  }
-
-  button, a[style*="padding: 10px"] {
-    width: 100%;
-    text-align: center;
-  }
-}
-
-/* ===== DASH PROFESIONAL ===== */
-@media (max-width: 600px) {
-  .dash-foto-card {
-    flex-direction: column !important;
-    align-items: center !important;
-    text-align: center !important;
-  }
-  .dash-foto-botones {
-    justify-content: center !important;
-  }
-}
+    <!-- Fuentes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
