@@ -48,7 +48,7 @@ function Explorar() {
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', padding: '30px 20px' }}>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
         <h2 style={{ margin: 0 }}>🔍 Explorar profesionales</h2>
       </div>
 
